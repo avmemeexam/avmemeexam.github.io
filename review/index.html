@@ -597,7 +597,6 @@
             document.getElementById('metaLang').innerText = ": " + data.lang;
             const sensEl = document.getElementById('metaSens');
             sensEl.innerText = ": " + data.sensitivity;
-            sensEl.style.color = data.sensitivity === "None" ? "#88ff88" : "#ff4444";
             document.getElementById('metaTrans').innerText = ": " + (data.transcription.length > 50 ? data.transcription.substring(0,50) + "..." : data.transcription);
             
             const ul = document.getElementById('cardOptions');
