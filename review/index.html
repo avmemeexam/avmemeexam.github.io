@@ -35,16 +35,18 @@
             text-align: center;
             z-index: 10;
             margin-top: 20px;
-            margin-bottom: 20px; /* Force space between text and wheel */
+            margin-bottom: 80px; /* Force space between text and wheel */
             pointer-events: none;
             height: auto;
         }
 
         .logo {
-            width: 70%;           /* Set the width to 80% of its container */
-            height: auto;         /* Maintains aspect ratio */
+            width: 70%;
+            max-width: 800px;
+            height: auto;
             display: block;
-            margin: 0 auto 25px auto;
+            /* Reduce the 25px bottom margin to something smaller like 5px or 10px */
+            margin: 0 auto 8px auto; 
             filter: drop-shadow(0 0 5px rgba(0,0,0,0.2)); 
         }
 
@@ -71,7 +73,7 @@
             cursor: grab;
             touch-action: none;
             /* Ensure it stays below the header flow */
-            margin-bottom: 20px; 
+            margin-bottom: 70px; 
         }
         .scene:active { cursor: grabbing; }
 
