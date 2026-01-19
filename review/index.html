@@ -154,6 +154,14 @@
             pointer-events: none;
         }
 
+        /* Add this inside your <style> tag */
+            .correct-answer {
+            font-weight: bold;
+            color: var(--primary-dark); /* Or use var(--accent) for more pop */
+            background-color: rgba(187, 225, 238, 0.3); /* Optional: subtle highlight */
+            border-radius: 4px;
+        }
+
         .video-column {
             flex: 1;
             display: flex;
@@ -335,6 +343,7 @@
                     "E. It became a sports anthem.",
                     "F. It is popularized from forums such as 4chan and reddit."
                 ], 
+                correct: "A",
                 src: "https://placehold.co/400x300/1a1a1a/FFF?text=Rick+Roll" 
             },
             { 
@@ -356,6 +365,7 @@
                     "C. When presenting a final project in an art class.",
                     "D. When asking the professor a question during a lecture."
                 ], 
+                correct: "B",
                 src: "https://placehold.co/400x300/331111/FFF?text=Gandalf" 
             },
             { 
@@ -379,6 +389,7 @@
                     "E. Another world.",
                     "F. Flight landing."
                 ], 
+                correct: "B",
                 src: "https://placehold.co/400x300/444444/FF0000?text=WASTED" 
             },
             { 
@@ -400,6 +411,7 @@
                     "C. Dramatic sea view.",
                     "D. New game with good visuals."
                 ], 
+                correct: "C",
                 src: "https://placehold.co/400x300/113311/FFF?text=Jackie+Chan" 
             },
             { 
@@ -421,31 +433,11 @@
                     "C. As an awkward attempt to compliment his companion.",
                     "D. To change the subject to his favorite topic, desert planets."
                 ], 
+                correct: "C",
                 src: "https://placehold.co/400x300/887755/FFF?text=Sand" 
             },
             { 
                 id: 6, 
-                title: "Kazoo Cover (Shooting Stars)", 
-                year: "2010", 
-                category: "Music", 
-                emotion: "sarcastic/ironic", 
-                lang: "N/A",
-                sensitivity: "None",
-                transcription: "N/A",
-                summary: "A short instrumental break mixing distorted guitar and kazoo.",
-                usage: "Used to express absurd humor, irony, or mock-solemn moments.", 
-                qType: "World Knowledge", 
-                question: "What type of character or figure would most likely appear when this distinctive instrumental interlude plays?", 
-                options: [
-                    "A. A cartoon superhero saving the world in slow motion with exaggerated seriousness.",
-                    "B. A middle-aged man performing mundane tasks.",
-                    "C. A young couple celebrating a wedding under bright fireworks.",
-                    "D. A musician playing a kazoo with a jazz song."
-                ], 
-                src: "https://placehold.co/400x300/222222/FFF?text=Kazoo+Kid" 
-            },
-            { 
-                id: 7, 
                 title: "Windows Error", 
                 year: "2001", 
                 category: "Sound Effect", 
@@ -464,10 +456,11 @@
                     "D. Android",
                     "E. iOS"
                 ], 
+                correct: "A",
                 src: "https://placehold.co/400x300/0000AA/FFF?text=XP+Error" 
             },
             { 
-                id: 8, 
+                id: 7, 
                 title: "Look at all those chickens", 
                 year: "2013", 
                 category: "Clean Speech", 
@@ -485,6 +478,7 @@
                     "C. She is angry at the animals for making a mess.",
                     "D. She is trying to sell the animals."
                 ], 
+                correct: "B",
                 src: "https://placehold.co/400x300/443311/FFF?text=Chickens" 
             }
         ];
@@ -611,6 +605,7 @@
         }
         
         function updateCard(index) {
+
             const data = memes[index];
             if (!data) return;
             
@@ -625,75 +620,30 @@
             document.getElementById('cardImage').src = data.src;
 
             document.getElementById('metaLang').innerText = ": " + data.lang;
-            const sensEl = document.getElementById('metaSens');
-            sensEl.innerText = ": " + data.sensitivity;
-            sensEl.style.color = data.sensitivity === "None" ? "#28a745" : "#dc3545"; 
+            document.getElementById('metaSens').innerText = ": " + data.sensitivity;
             
             document.getElementById('metaTrans').innerText = ": " + (data.transcription.length > 50 ? data.transcription.substring(0,50) + "..." : data.transcription);
             
             const ul = document.getElementById('cardOptions');
             ul.innerHTML = '';
+            
             data.options.forEach(opt => {
                 const li = document.createElement('li');
-                const letter = opt.split('.')[0]; 
+                
+                // Extract the letter (e.g., "A" from "A. Option Text")
+                const letter = opt.split('.')[0].trim(); 
                 const text = opt.substring(letter.length + 1);
+                
+                // Check if this is the correct answer
+                if (data.correct && letter === data.correct) {
+                    li.classList.add('correct-answer');
+                }
+
                 li.innerHTML = `<span class="opt-letter">${letter}.</span>${text}`;
                 ul.appendChild(li);
             });
         }
-        
-        function findActiveItem() {
-            const items = document.querySelectorAll('.item');
-            items.forEach((item, index) => {
-                if(item.classList.contains('active')) updateCard(index);
-            });
-        }
 
-        function startDrag(e) {
-            if (isSpinning) return;
-            isDragging = true;
-            startX = e.pageX || e.touches[0].pageX;
-            lastX = startX;
-            velocity = 0;
-            // HIDE CARD ON DRAG
-            cardContainer.classList.add('hidden');
-        }
-
-        function moveDrag(e) {
-            if (!isDragging) return;
-            const clientX = e.pageX || e.touches[0].pageX;
-            const deltaX = clientX - lastX;
-            lastX = clientX;
-            currentAngle += deltaX * 0.3; 
-            velocity = deltaX * 0.3;
-        }
-
-        function endDrag() {
-            if (isSpinning) return;
-            isDragging = false;
-            // Do not show card here immediately. Loop physics will handle it when velocity drops.
-        }
-
-        scene.addEventListener('mousedown', startDrag);
-        window.addEventListener('mousemove', moveDrag);
-        window.addEventListener('mouseup', endDrag);
-        scene.addEventListener('touchstart', startDrag);
-        window.addEventListener('touchmove', moveDrag);
-        window.addEventListener('touchend', endDrag);
-        
-        document.addEventListener('keydown', (e) => {
-            if (isSpinning) return;
-            if(e.key === "ArrowLeft") {
-                velocity += 3;
-                cardContainer.classList.add('hidden');
-            }
-            if(e.key === "ArrowRight") {
-                velocity -= 3;
-                cardContainer.classList.add('hidden');
-            }
-        });
-
-        init();
     </script>
 
 </body>
