@@ -778,7 +778,11 @@
                 
                 // Set the Static Image (Use the meme image, or your custom speaker icon)
                 // Currently using data.src (Meme Image) + the Overlay Icon defined in HTML
-                audioPoster.src = data.src; 
+                let posterSrc = data.src;
+                if (posterSrc.includes('placehold.co') && posterSrc.includes('?text=')) {
+                    posterSrc += '+(audio-only)';
+                }
+                audioPoster.src = posterSrc;
                 
             } else {
                 // --- VIDEO MODE ---
