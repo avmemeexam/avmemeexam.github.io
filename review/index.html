@@ -319,6 +319,7 @@
         </div>
     </div>
 
+
     <script>
         // --- DATA FROM PAPER (APPENDIX D) ---
         const memes = [
@@ -482,7 +483,7 @@
                 src: "https://placehold.co/400x300/443311/FFF?text=Chickens" 
             }
         ];
-
+    
         // --- 3D ENGINE ---
         const radiusX = 450;
         const radiusZ = 200;
@@ -494,77 +495,136 @@
         let startX = 0;
         let lastX = 0;
         let velocity = 0;
-
+    
         const orbit = document.getElementById('orbit');
         const scene = document.getElementById('scene');
         const cardContainer = document.getElementById('cardContainer');
-
+    
         function init() {
             memes.forEach((meme, index) => {
                 const el = document.createElement('div');
                 el.className = 'item';
                 el.style.backgroundImage = `url('${meme.src}')`;
                 el.innerHTML = `<div class="item-label">${meme.title}</div>`;
+                // Store index so we can easily find it later
+                el.dataset.index = index;
                 const initialTheta = index * itemAngleStep;
                 el.dataset.baseTheta = initialTheta; 
                 orbit.appendChild(el);
             });
-
+    
             orbit.style.transform = "rotateX(-10deg)";
             
+            // Setup Drag Events
+            setupEvents();
+    
             // Spin Logic
             const randomIndex = Math.floor(Math.random() * memes.length);
             const targetTheta = randomIndex * itemAngleStep;
-            const stopAngle = 90 - targetTheta - (360 * 4);
             
-            animateSpin(90, stopAngle, 3000); 
+            // We want to land such that targetTheta + currentAngle = 90 (front)
+            // But currentAngle starts at 90. 
+            // Logic: active item is one near 90deg.
+            // Let's just spin a few times and land near 0 relative offset
+            const stopAngle = 90 - (randomIndex * itemAngleStep) - (360 * 3);
+            
+            animateSpin(currentAngle, stopAngle, 2500); 
         }
-
+    
+        function setupEvents() {
+            // Mouse Events
+            scene.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                isSpinning = false; // Stop auto-spin on interaction
+                startX = e.clientX;
+                lastX = e.clientX;
+                cardContainer.classList.add('hidden'); // Hide card while dragging
+            });
+    
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const delta = e.clientX - lastX;
+                lastX = e.clientX;
+                velocity = delta * 0.3; // Sensitivity
+                currentAngle += velocity;
+                updateRender();
+            });
+    
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+    
+            // Touch Events
+            scene.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                isSpinning = false;
+                startX = e.touches[0].clientX;
+                lastX = e.touches[0].clientX;
+                cardContainer.classList.add('hidden');
+            }, {passive: false});
+    
+            window.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                const clientX = e.touches[0].clientX;
+                const delta = clientX - lastX;
+                lastX = clientX;
+                velocity = delta * 0.3;
+                currentAngle += velocity;
+                updateRender();
+            }, {passive: false});
+    
+            window.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+        }
+    
         function animateSpin(start, end, duration) {
             let startTime = null;
             function step(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
                 const progress = Math.min(elapsed / duration, 1);
+                // Ease Out Cubic
                 const ease = 1 - Math.pow(1 - progress, 3);
                 currentAngle = start + (end - start) * ease;
+                
                 updateRender(); 
+                
                 if (progress < 1) {
                     requestAnimationFrame(step);
                 } else {
                     isSpinning = false;
                     currentAngle = end; 
-                    findActiveItem();   
+                    // Ensure we are perfectly snapped
                     loop();
-                    // Reveal card when intro spin finishes
                     cardContainer.classList.remove('hidden');
                 }
             }
             requestAnimationFrame(step);
         }
-
+    
         function loop() {
-            // Logic: Hide card if dragging or moving fast
-            // Logic: Show card if stopped
-            
             if (!isSpinning && !isDragging) {
-                velocity *= 0.95; 
+                velocity *= 0.95; // Friction
                 currentAngle += velocity;
                 
-                // If velocity is high, ensure card is hidden
-                if (Math.abs(velocity) > 0.5) {
+                if (Math.abs(velocity) > 0.1) {
                     cardContainer.classList.add('hidden');
-                }
-
-                if (Math.abs(velocity) < 0.1) {
-                    const snapTarget = Math.round((currentAngle - 90) / itemAngleStep) * itemAngleStep + 90;
-                    currentAngle += (snapTarget - currentAngle) * 0.1;
+                } else {
+                    // Snap to nearest item
+                    // We want an item (baseTheta + currentAngle) % 360 == 90
+                    // So currentAngle should result in (90 - baseTheta)
+                    // The itemAngleStep grid is predictable.
                     
-                    // STOP CONDITION
-                    if(Math.abs(snapTarget - currentAngle) < 0.01) {
+                    const relativeAngle = currentAngle - 90;
+                    const snapTarget = Math.round(relativeAngle / itemAngleStep) * itemAngleStep + 90;
+                    
+                    // Smooth snap
+                    currentAngle += (snapTarget - currentAngle) * 0.1;
+    
+                    if(Math.abs(snapTarget - currentAngle) < 0.05) {
                         currentAngle = snapTarget;
-                        findActiveItem();
-                        // Reveal Card
+                        // Reveal Card if stopped
                         cardContainer.classList.remove('hidden');
                     }
                 }
@@ -572,31 +632,37 @@
             updateRender();
             requestAnimationFrame(loop);
         }
-
+    
         function updateRender() {
             const items = document.querySelectorAll('.item');
             items.forEach((item, index) => {
                 const baseTheta = parseFloat(item.dataset.baseTheta);
                 const theta = baseTheta + currentAngle;
                 const rad = theta * (Math.PI / 180);
+                
+                // Calculate 3D position
                 const x = radiusX * Math.cos(rad);
                 const z = radiusZ * Math.sin(rad);
+                
+                // Scale and Opacity based on Z-depth
+                // z ranges from -radiusZ to +radiusZ
                 const scale = 0.6 + (0.4 * (z + radiusZ) / (2 * radiusZ));
                 const opacity = 0.4 + (0.6 * (z + radiusZ) / (2 * radiusZ));
-
+    
                 item.style.transform = `translate3d(${x}px, 0, ${z}px) scale(${scale})`;
                 item.style.zIndex = Math.floor(z + radiusZ);
                 item.style.opacity = opacity;
-
+    
+                // Normalize angle to check who is at the "front" (90 degrees)
                 let normTheta = theta % 360;
                 if(normTheta < 0) normTheta += 360;
                 
+                // If item is roughly at 90 degrees (+/- 10)
                 if (normTheta > 80 && normTheta < 100) {
                     if (!item.classList.contains('active')) {
+                        items.forEach(i => i.classList.remove('active')); // clear others
                         item.classList.add('active');
-                        if(!isSpinning || Math.abs(velocity) < 2) {
-                             updateCard(index);
-                        }
+                        updateCard(index);
                     }
                 } else {
                     item.classList.remove('active');
@@ -605,7 +671,6 @@
         }
         
         function updateCard(index) {
-
             const data = memes[index];
             if (!data) return;
             
@@ -618,7 +683,7 @@
             document.getElementById('cardQType').innerText = data.qType;
             document.getElementById('cardQuestion').innerText = data.question;
             document.getElementById('cardImage').src = data.src;
-
+    
             document.getElementById('metaLang').innerText = ": " + data.lang;
             document.getElementById('metaSens').innerText = ": " + data.sensitivity;
             
@@ -630,21 +695,22 @@
             data.options.forEach(opt => {
                 const li = document.createElement('li');
                 
-                // Extract the letter (e.g., "A" from "A. Option Text")
                 const letter = opt.split('.')[0].trim(); 
                 const text = opt.substring(letter.length + 1);
                 
-                // Check if this is the correct answer
                 if (data.correct && letter === data.correct) {
                     li.classList.add('correct-answer');
                 }
-
+    
                 li.innerHTML = `<span class="opt-letter">${letter}.</span>${text}`;
                 ul.appendChild(li);
             });
         }
-
+    
+        // --- START ---
+        init();
     </script>
 
+    
 </body>
 </html>
