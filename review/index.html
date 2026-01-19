@@ -170,20 +170,68 @@
             max-width: 350px;
         }
         
-        .video-placeholder {
+        /* Update .video-placeholder to ensure the video fits */
+        .video-placeholder video {
             width: 100%;
-            aspect-ratio: 16/9;
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
-            position: relative;
-            border: 1px solid #ddd;
+            height: 100%;
+            object-fit: contain; /* Ensures the whole video is visible */
+            background: #000;    /* Black bars for mismatched aspect ratios */
         }
+
         .video-placeholder img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
         .play-overlay {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
             font-size: 3rem; color: white; text-shadow: 0 0 10px black; cursor: pointer;
         }
+
+        /* The container for Audio Mode */
+        .audio-mode-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* The static image in Audio Mode */
+        .audio-mode-container img.audio-poster {
+            width: 100%;
+            height: calc(100% - 40px); /* Leave space for audio bar */
+            object-fit: contain;
+            opacity: 0.9;
+        }
+
+        /* The Audio Player Bar */
+        .audio-mode-container audio {
+            width: 100%;
+            height: 40px;
+            background: #f1f3f4;
+        }
+
+        /* The Overlay Speaker Icon */
+        .speaker-overlay {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px; 
+            height: 80px;
+            pointer-events: none; /* Let clicks pass through */
+            opacity: 0.8;
+            background: rgba(0,0,0,0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .speaker-overlay svg {
+            fill: white;
+            width: 40px;
+            height: 40px;
+        }
+
         
         .metadata-grid {
             display: grid;
@@ -283,8 +331,21 @@
         
         <div class="video-column">
             <div class="video-placeholder">
-                <img id="cardImage" src="" alt="Meme Preview">
-                <div class="play-overlay">▶</div>
+                <video id="cardVideo" controls playsinline style="display:block;">
+                    Your browser does not support the video tag.
+                </video>
+            
+                <div id="cardAudioContainer" class="audio-mode-container" style="display:none;">
+                    <img id="cardAudioPoster" class="audio-poster" src="" alt="Audio Preview">
+                    
+                    <div class="speaker-overlay">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                        </svg>
+                    </div>
+            
+                    <audio id="cardAudioPlayer" controls></audio>
+                </div>
             </div>
             
             <div class="metadata-grid">
@@ -345,7 +406,8 @@
                     "F. It is popularized from forums such as 4chan and reddit."
                 ], 
                 correct: "A",
-                src: "https://placehold.co/400x300/1a1a1a/FFF?text=Rick+Roll" 
+                src: "https://placehold.co/400x300/1a1a1a/FFF?text=Rick+Roll",
+                video: "../videos/dQw4w9WgXcQ_0.0_25.0.mp4"
             },
             { 
                 id: 2, 
@@ -367,7 +429,8 @@
                     "D. When asking the professor a question during a lecture."
                 ], 
                 correct: "B",
-                src: "https://placehold.co/400x300/331111/FFF?text=Gandalf" 
+                src: "https://placehold.co/400x300/331111/FFF?text=Gandalf",
+                video: "../videos/3xYXUeSmb-Y_0.0_6.0.mp4"
             },
             { 
                 id: 3, 
@@ -391,11 +454,12 @@
                     "F. Flight landing."
                 ], 
                 correct: "B",
-                src: "https://placehold.co/400x300/444444/FF0000?text=WASTED" 
+                src: "https://placehold.co/400x300/444444/FF0000?text=WASTED",
+                video: "../videos/K3kFQHKE0LA_0.0_7.0.wav"
             },
             { 
                 id: 4, 
-                title: "Duang (Shampoo Ad)", 
+                title: "霸王洗发水", 
                 year: "2004", 
                 category: "Noisy Speech", 
                 emotion: "neutral", 
@@ -413,7 +477,8 @@
                     "D. New game with good visuals."
                 ], 
                 correct: "C",
-                src: "https://placehold.co/400x300/113311/FFF?text=Jackie+Chan" 
+                src: "https://placehold.co/400x300/113311/FFF?text=Jackie+Chan",
+                video: "../videos/DzCinbvtXaE_62.0_92.0.mp4"
             },
             { 
                 id: 5, 
@@ -435,7 +500,8 @@
                     "D. To change the subject to his favorite topic, desert planets."
                 ], 
                 correct: "C",
-                src: "https://placehold.co/400x300/887755/FFF?text=Sand" 
+                src: "https://placehold.co/400x300/887755/FFF?text=Sand",
+                video: "../videos/2tLf1JO5bvE_1.0_5.0.mp4"
             },
             { 
                 id: 6, 
@@ -458,7 +524,8 @@
                     "E. iOS"
                 ], 
                 correct: "A",
-                src: "https://placehold.co/400x300/0000AA/FFF?text=XP+Error" 
+                src: "https://placehold.co/400x300/0000AA/FFF?text=XP+Error",
+                video: "../videos/YnP94m5pwls_0.0_5.0.wav"
             },
             { 
                 id: 7, 
@@ -480,7 +547,8 @@
                     "D. She is trying to sell the animals."
                 ], 
                 correct: "B",
-                src: "https://placehold.co/400x300/443311/FFF?text=Chickens" 
+                src: "https://placehold.co/400x300/443311/FFF?text=Chickens",
+                video: "../videos/3xYXUeSmb-Y_0.0_6.0.mp4"
             }
         ];
     
@@ -674,6 +742,7 @@
             const data = memes[index];
             if (!data) return;
             
+            // Text updates
             document.getElementById('cardTitle').innerText = data.title;
             document.getElementById('cardYear').innerText = data.year;
             document.getElementById('cardCategory').innerText = data.category;
@@ -682,11 +751,47 @@
             document.getElementById('cardUsage').innerText = data.usage;
             document.getElementById('cardQType').innerText = data.qType;
             document.getElementById('cardQuestion').innerText = data.question;
-            document.getElementById('cardImage').src = data.src;
-    
+
+            // --- MEDIA LOGIC UPDATE ---
+            const videoEl = document.getElementById('cardVideo');
+            const audioContainer = document.getElementById('cardAudioContainer');
+            const audioPlayer = document.getElementById('cardAudioPlayer');
+            const audioPoster = document.getElementById('cardAudioPoster');
+
+            // Reset everything first
+            videoEl.pause();
+            audioPlayer.pause();
+            videoEl.currentTime = 0;
+            audioPlayer.currentTime = 0;
+
+            const mediaPath = data.video || "";
+            // Check if it is a WAV file (Audio Mode)
+            const isAudio = mediaPath.toLowerCase().endsWith('.wav');
+
+            if (isAudio) {
+                // --- AUDIO MODE ---
+                videoEl.style.display = 'none';           // Hide Video Tag
+                audioContainer.style.display = 'flex';    // Show Audio Container
+                
+                // Set the Audio Source
+                audioPlayer.src = mediaPath;
+                
+                // Set the Static Image (Use the meme image, or your custom speaker icon)
+                // Currently using data.src (Meme Image) + the Overlay Icon defined in HTML
+                audioPoster.src = data.src; 
+                
+            } else {
+                // --- VIDEO MODE ---
+                audioContainer.style.display = 'none';    // Hide Audio Container
+                videoEl.style.display = 'block';          // Show Video Tag
+                
+                videoEl.poster = data.src;
+                videoEl.src = mediaPath;
+            }
+            // --------------------------
+
             document.getElementById('metaLang').innerText = ": " + data.lang;
             document.getElementById('metaSens').innerText = ": " + data.sensitivity;
-            
             document.getElementById('metaTrans').innerText = ": " + (data.transcription.length > 50 ? data.transcription.substring(0,50) + "..." : data.transcription);
             
             const ul = document.getElementById('cardOptions');
@@ -694,14 +799,13 @@
             
             data.options.forEach(opt => {
                 const li = document.createElement('li');
-                
                 const letter = opt.split('.')[0].trim(); 
                 const text = opt.substring(letter.length + 1);
                 
                 if (data.correct && letter === data.correct) {
                     li.classList.add('correct-answer');
                 }
-    
+
                 li.innerHTML = `<span class="opt-letter">${letter}.</span>${text}`;
                 ul.appendChild(li);
             });
