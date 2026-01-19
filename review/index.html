@@ -780,7 +780,7 @@
                 // Currently using data.src (Meme Image) + the Overlay Icon defined in HTML
                 let posterSrc = data.src;
                 if (posterSrc.includes('placehold.co') && posterSrc.includes('?text=')) {
-                    posterSrc += '//(audio-only)';
+                    posterSrc += '%0A(audio-only)';
                 }
                 audioPoster.src = posterSrc;
                 
