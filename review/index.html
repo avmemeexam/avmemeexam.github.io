@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AVMeme Exam</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         :root {
             --primary: #bbe1ee;
@@ -16,47 +18,60 @@
             --text-sub: #666666;
         }
 
-        body {
+        /* --- SCROLL SNAP & SLIDE LAYOUT --- */
+        html, body {
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
             background-color: var(--bg);
             color: var(--text-main);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            /* Change overflow from hidden to auto */
-            overflow-y: auto; 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            /* Use min-height instead of height to allow the page to grow */
-            min-height: 100vh;
             user-select: none;
         }
 
+        /* Common Slide Styling */
+        .slide {
+            width: 100%;
+            height: 100vh;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden; 
+        }
+
+        /* --- SLIDE 1: HEADER & WHEEL --- */
         header {
             text-align: center;
             z-index: 10;
-            margin-top: 20px;
-            margin-bottom: 80px; /* Force space between text and wheel */
+            margin-bottom: 10px;
             pointer-events: none;
-            height: auto;
+            flex-shrink: 0;
         }
 
         .logo {
-            width: 66%;
+            width: 50%;
+            max-width: 400px;
             height: auto;
             display: block;
-            /* Reduce the 25px bottom margin to something smaller like 5px or 10px */
-            margin: 0 auto 8px auto; 
+            margin: 0 auto 5px auto; 
             filter: drop-shadow(0 0 5px rgba(0,0,0,0.2)); 
         }
 
-        p.subtitle { color: #888; font-style: italic; margin-top: 0; font-size: 0.9rem; }
+        p.subtitle { color: #888; font-style: italic; margin-top: 0; font-size: 0.8rem; }
 
         .main-description {
-            color: #444444;
-            font-size: 1.1rem;
-            line-height: 1.4;
+            color: #444;
+            font-size: 1rem;
+            line-height: 1.3;
             max-width: 800px;
-            margin: 15px auto 0 auto;
+            margin: 5px auto 0 auto;
             font-weight: 500;
             text-align: center;
         }
@@ -65,14 +80,14 @@
         .scene {
             position: relative;
             width: 100%;
-            /* Change height to auto or a larger value to prevent collision */
+            height: 250px;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: grab;
             touch-action: none;
-            /* Ensure it stays below the header flow */
-            margin-bottom: 80px; 
+            flex-shrink: 0;
+            margin-bottom: 10px;
         }
         .scene:active { cursor: grabbing; }
 
@@ -85,16 +100,16 @@
 
         .item {
             position: absolute;
-            width: 140px;
-            height: 90px;
+            width: 120px;
+            height: 80px;
             background: #000;
             border: 2px solid var(--secondary);
             box-shadow: 0 0 10px rgba(0,0,0,0.2);
             border-radius: 10px;
             left: 50%;
             top: 50%;
-            margin-left: -70px;
-            margin-top: -45px;
+            margin-left: -60px;
+            margin-top: -40px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -118,7 +133,7 @@
             background: rgba(0,0,0,0.8);
             width: 100%;
             text-align: center;
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             padding: 4px 0;
             color: white;
             white-space: nowrap;
@@ -126,40 +141,33 @@
             text-overflow: ellipsis;
         }
 
+        .nav-cue { position: absolute; top: 50%; font-size: 2rem; color: rgba(0,0,0,0.1); pointer-events: none; }
+        .nav-cue.left { left: 20px; }
+        .nav-cue.right { right: 20px; }
+
         /* MEME CARD CONTAINER */
         .meme-card-container {
-            flex-grow: 1;
             width: 90%;
-            max-width: 1000px;
+            max-width: 900px;
             background: var(--card-bg);
             border-top: 5px solid var(--primary);
-            padding: 20px;
+            padding: 15px;
             display: flex;
             gap: 20px;
-            margin-bottom: 20px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            flex-shrink: 1;
+            max-height: 45vh;
             overflow: hidden;
-            
-            /* Transition for Hiding/Showing */
             opacity: 1;
             transform: translateY(0);
             transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        /* HIDDEN STATE: When rotating */
         .meme-card-container.hidden {
             opacity: 0;
-            transform: translateY(30px); /* Slides down slightly */
+            transform: translateY(30px);
             pointer-events: none;
-        }
-
-        /* Add this inside your <style> tag */
-            .correct-answer {
-            font-weight: bold;
-            color: var(--primary-dark); /* Or use var(--accent) for more pop */
-            background-color: rgba(187, 225, 238, 0.3); /* Optional: subtle highlight */
-            border-radius: 4px;
         }
 
         .video-column {
@@ -167,82 +175,44 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            max-width: 350px;
-        }
-        
-        /* Update .video-placeholder to ensure the video fits */
-        .video-placeholder video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* Ensures the whole video is visible */
-            background: #000;    /* Black bars for mismatched aspect ratios */
+            max-width: 300px;
         }
 
-        .video-placeholder img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
-        .play-overlay {
-            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-            font-size: 3rem; color: white; text-shadow: 0 0 10px black; cursor: pointer;
-        }
-
-        /* The container for Audio Mode */
-        .audio-mode-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
+        .video-placeholder {
+            flex: 1;
             background: #000;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* The static image in Audio Mode */
-        .audio-mode-container img.audio-poster {
-            width: 100%;
-            height: calc(100% - 40px); /* Leave space for audio bar */
-            object-fit: contain;
-            opacity: 0.9;
-        }
-
-        /* The Audio Player Bar */
-        .audio-mode-container audio {
-            width: 100%;
-            height: 40px;
-            background: #f1f3f4;
-        }
-
-        /* The Overlay Speaker Icon */
-        .speaker-overlay {
-            position: absolute;
-            top: 45%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80px; 
-            height: 80px;
-            pointer-events: none; /* Let clicks pass through */
-            opacity: 0.8;
-            background: rgba(0,0,0,0.5);
-            border-radius: 50%;
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .speaker-overlay svg {
-            fill: white;
-            width: 40px;
-            height: 40px;
-        }
-
-        
-        .metadata-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-size: 0.8rem;
-            color: var(--text-sub);
-            background: #f8f9fa;
-            padding: 10px;
+            min-height: 150px;
             border-radius: 8px;
-            border: 1px solid #eee;
+            overflow: hidden;
+        }
+        
+        .video-placeholder video { width: 100%; height: 100%; object-fit: contain; }
+        
+        /* Audio Mode Styles */
+        .audio-mode-container {
+            position: relative; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+        }
+        .audio-mode-container img.audio-poster {
+            width: 100%; height: calc(100% - 40px); object-fit: contain; opacity: 0.9;
+        }
+        .audio-mode-container audio { width: 100%; height: 40px; background: #f1f3f4; }
+        .speaker-overlay {
+            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
+            width: 60px; height: 60px; pointer-events: none; opacity: 0.8;
+            background: rgba(0,0,0,0.5); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .speaker-overlay svg { fill: white; width: 30px; height: 30px; }
+
+        .metadata-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
+            font-size: 0.75rem; color: var(--text-sub);
+            background: #f8f9fa; padding: 8px; border-radius: 8px; border: 1px solid #eee;
         }
         .meta-item strong { color: #222; display: block; }
         .meta-full { grid-column: span 2; }
@@ -252,561 +222,248 @@
             display: flex;
             flex-direction: column;
             overflow-y: auto;
-            padding-right: 10px;
+            padding-right: 5px;
         }
-
-        .info-panel::-webkit-scrollbar { width: 8px; }
-        .info-panel::-webkit-scrollbar-track { background: #f1f1f1; }
-        .info-panel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-        .info-panel::-webkit-scrollbar-thumb:hover { background: #bbb; }
+        .info-panel::-webkit-scrollbar { width: 6px; }
+        .info-panel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
 
         .header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+            border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; margin-bottom: 8px;
         }
-        
-        h2 { margin: 0; font-size: 1.5rem; color: #111; }
-        .year-tag { font-family: monospace; color: #999; font-size: 1.2rem; font-weight: bold; }
+        h2 { margin: 0; font-size: 1.3rem; color: #111; }
+        .year-tag { font-family: monospace; color: #999; font-size: 1rem; font-weight: bold; }
 
-        .tags-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+        .tags-row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+        .badge { padding: 3px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; text-transform: uppercase; }
         .badge.cat { background: var(--primary); color: #004455; }
         .badge.emo { background: #e0e0e0; color: #555; border: 1px solid #ccc; }
-        .badge.sens { background: var(--accent); color: white; }
 
         .description-text {
-            font-size: 0.95rem; color: #444; margin-bottom: 15px; line-height: 1.5;
-            background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #eee;
+            font-size: 0.9rem; color: #444; margin-bottom: 10px; line-height: 1.4;
+            background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #eee;
         }
-        .description-text strong { color: #000; }
 
         .question-area {
-            background: #f0f7fa; 
-            border-left: 4px solid var(--primary);
-            padding: 15px;
-            border-radius: 0 8px 8px 0;
+            background: #f0f7fa; border-left: 4px solid var(--primary);
+            padding: 10px; border-radius: 0 8px 8px 0;
         }
-        
-        .q-type { color: #666; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: bold; }
-        .q-text { font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; display: block; color: #222; }
+        .q-type { color: #666; font-size: 0.7rem; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        .q-text { font-size: 1rem; font-weight: bold; margin-bottom: 8px; display: block; color: #222; }
         
         .choices-list { list-style: none; padding: 0; margin: 0; }
         .choices-list li {
-            padding: 8px 10px;
-            border-bottom: 1px solid #e0e0e0;
-            font-size: 1rem;
-            color: #333;
+            padding: 6px 8px; border-bottom: 1px solid #e0e0e0; font-size: 0.9rem; color: #333;
         }
         .choices-list li:last-child { border-bottom: none; }
-        .choices-list li:hover { background: rgba(0,0,0,0.03); }
         .choices-list li span.opt-letter { color: #0077aa; font-weight: bold; margin-right: 8px; }
+        .correct-answer {
+            font-weight: bold; color: #1e81b0;
+            background-color: rgba(187, 225, 238, 0.3); border-radius: 4px;
+        }
 
-        .nav-cue { position: absolute; top: 50%; font-size: 2rem; color: rgba(0,0,0,0.1); pointer-events: none; }
-        .nav-cue.left { left: 20px; }
-        .nav-cue.right { right: 20px; }
+        /* --- SLIDE 2: STATS --- */
+        .stats-container {
+            width: 80%;
+            max-width: 1100px;
+            background: var(--card-bg);
+            /* Updated to use CSS Variable for consistency with Meme Card */
+            border-top: 5px solid var(--primary); 
+            padding: 70px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
+        .stats-title {
+            color: #666666; /* Dark Gray */
+            margin-bottom: 10px; /* Reduced bottom margin to sit closer to subtitle */
+            font-size: 2rem;     /* Slightly larger for impact */
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .stats-subtitle {
+            color: #666666; /* Slightly lighter gray for hierarchy */
+            font-size: 1.1rem;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 40px; /* Space between text and charts */
+            max-width: 800px;
+            line-height: 1.5;
+        }
+
+        .charts-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            gap: 30px;
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            min-width: 250px;
+            max-width: 320px;
+            height: 320px; 
+            position: relative;
+        }
+
+        .chart-wrapper h3 {
+            text-align: center; color: var(--secondary); margin-bottom: 10px;
+        }
+
+        /* SCROLL INDICATOR */
+        .scroll-indicator {
+            position: absolute; bottom: 20px; left: 50%;
+            transform: translateX(-50%); opacity: 0.5;
+            cursor: pointer; animation: bounce 2s infinite;
+            font-size: 2rem; color: #aaa;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+            40% {transform: translateX(-50%) translateY(-10px);}
+            60% {transform: translateX(-50%) translateY(-5px);}
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .slide { height: auto; min-height: 100vh; padding: 10px; }
+            .orbit { width: 300px; height: 300px; }
+            .item { width: 100px; height: 70px; margin-left: -50px; margin-top: -35px; }
+            .meme-card-container { flex-direction: column; max-height: none; overflow: visible; }
+            .video-column { max-width: 100%; }
+            .charts-row { flex-direction: column; align-items: center; }
+            .chart-wrapper { width: 100%; height: 250px; }
+        }
     </style>
 </head>
 <body>
-    <header>
-        <img src="../image/logo.png" alt="AVMeme Exam Logo" class="logo">
-        <p class="main-description">
-            A Multimodal Multilingual Multicultural Benchmark for<br>
-            LLMs' Contextual and Cultural Knowledge and Thinking
-        </p>
-        <p class="presenter-line">Presented by AVMeme Team</p>
-    </header>
 
-    <div class="scene" id="scene">
-        <div class="orbit" id="orbit"></div>
-        <div class="nav-cue left">❮</div>
-        <div class="nav-cue right">❯</div>
-    </div>
+    <section class="slide" id="slide1">
+        <header>
+            <img src="../image/logo.png" alt="AVMeme Exam Logo" class="logo">
+            <p class="main-description">
+                A Multimodal Multilingual Multicultural Benchmark for<br>
+                LLMs' Contextual and Cultural Knowledge and Thinking
+            </p>
+            <p class="subtitle">Presented by AVMeme Team</p>
+        </header>
 
-    <div class="meme-card-container hidden" id="cardContainer">
-        
-        <div class="video-column">
-            <div class="video-placeholder">
-                <video id="cardVideo" controls playsinline style="display:block;">
-                    Your browser does not support the video tag.
-                </video>
+        <div class="scene" id="scene">
+            <div class="orbit" id="orbit"></div>
+            <div class="nav-cue left">❮</div>
+            <div class="nav-cue right">❯</div>
+        </div>
+
+        <div class="meme-card-container hidden" id="cardContainer">
             
-                <div id="cardAudioContainer" class="audio-mode-container" style="display:none;">
-                    <img id="cardAudioPoster" class="audio-poster" src="" alt="Audio Preview">
-                    
-                    <div class="speaker-overlay">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                        </svg>
+            <div class="video-column">
+                <div class="video-placeholder">
+                    <video id="cardVideo" controls playsinline style="display:block;">
+                        Your browser does not support the video tag.
+                    </video>
+                
+                    <div id="cardAudioContainer" class="audio-mode-container" style="display:none;">
+                        <img id="cardAudioPoster" class="audio-poster" src="" alt="Audio Preview">
+                        <div class="speaker-overlay">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                            </svg>
+                        </div>
+                        <audio id="cardAudioPlayer" controls></audio>
                     </div>
-            
-                    <audio id="cardAudioPlayer" controls></audio>
+                </div>
+                
+                <div class="metadata-grid">
+                    <div class="meta-item"><strong>Language</strong><span id="metaLang">en</span></div>
+                    <div class="meta-item"><strong>Sensitivity</strong><span id="metaSens">None</span></div>
+                    <div class="meta-item meta-full"><strong>Transcript</strong><span id="metaTrans" style="font-style: italic; color: #666;">N/A</span></div>
                 </div>
             </div>
-            
-            <div class="metadata-grid">
-                <div class="meta-item"><strong>Language</strong><span id="metaLang">en</span></div>
-                <div class="meta-item"><strong>Sensitivity</strong><span id="metaSens">None</span></div>
-                <div class="meta-item meta-full"><strong>Transcript</strong><span id="metaTrans" style="font-style: italic; color: #666;">N/A</span></div>
+
+            <div class="info-panel">
+                <div class="header-row">
+                    <h2 id="cardTitle">Title</h2>
+                    <span class="year-tag" id="cardYear">2020</span>
+                </div>
+
+                <div class="tags-row">
+                    <span id="cardCategory" class="badge cat">Category</span>
+                    <span id="cardEmotion" class="badge emo">Emotion</span>
+                </div>
+
+                <div class="description-text">
+                    <strong>Summary:</strong> <span id="cardSummary">...</span><br>
+                    <strong>Usage:</strong> <span id="cardUsage">...</span>
+                </div>
+
+                <div class="question-area">
+                    <div class="q-type" id="cardQType">Question Type</div>
+                    <span class="q-text" id="cardQuestion">Question goes here?</span>
+                    <ul class="choices-list" id="cardOptions">
+                    </ul>
+                </div>
             </div>
         </div>
 
-        <div class="info-panel">
-            <div class="header-row">
-                <h2 id="cardTitle">Title</h2>
-                <span class="year-tag" id="cardYear">2020</span>
-            </div>
+        <div class="scroll-indicator" onclick="document.getElementById('slide2').scrollIntoView()">
+            ▼
+        </div>
+    </section>
 
-            <div class="tags-row">
-                <span id="cardCategory" class="badge cat">Category</span>
-                <span id="cardEmotion" class="badge emo">Emotion</span>
-            </div>
+    <section class="slide" id="slide2">
+        <div class="stats-container">
+            <h2 class="stats-title">Testing Content, Context & Cultural Understanding</h2>
+            <p class="stats-subtitle">
+                Covering well-known, multilingual Internet speeches, songs, music, and sound effects.
+            </p>
+            <div class="charts-row">
+                <div class="chart-wrapper">
+                    <h3>Question Types</h3>
+                    <canvas id="chartQuestionTypes"></canvas>
+                </div>
 
-            <div class="description-text">
-                <strong>Summary:</strong> <span id="cardSummary">...</span><br>
-                <strong>Usage:</strong> <span id="cardUsage">...</span>
-            </div>
+                <div class="chart-wrapper">
+                    <h3>Sound Categories</h3>
+                    <canvas id="chartSoundCategories"></canvas>
+                </div>
 
-            <div class="question-area">
-                <div class="q-type" id="cardQType">Question Type</div>
-                <span class="q-text" id="cardQuestion">Question goes here?</span>
-                <ul class="choices-list" id="cardOptions">
-                </ul>
+                <div class="chart-wrapper">
+                    <h3>Languages</h3>
+                    <canvas id="chartLanguages"></canvas>
+                </div>
             </div>
         </div>
-    </div>
-
+    </section>
 
     <script>
-        // --- DATA FROM PAPER (APPENDIX D) ---
+        // --- 1. MEME DATA ---
         const memes = [
-            { 
-                id: 1, 
-                title: "Never Gonna Give You Up", 
-                year: "1987", 
-                category: "Song", 
-                emotion: "surprised/shocked, nostalgic", 
-                lang: "English",
-                sensitivity: "None",
-                transcription: "We're no strangers to love. You know the rules and...",
-                summary: "The start of music video 'Never Gonna Give You Up'.",
-                usage: "A bait and switch is usually done using a disguised hyperlink leading to this music video.", 
-                qType: "Humor & Popularity", 
-                question: "What is the top reason this song became so popular as a meme?", 
-                options: [
-                    "A. Unexpected appearance on the Internet.", 
-                    "B. Often got edited and remixed for parody.",
-                    "C. A lot of references from other songs and movies.",
-                    "D. The singer has sung it a lot.",
-                    "E. It became a sports anthem.",
-                    "F. It is popularized from forums such as 4chan and reddit."
-                ], 
-                correct: "A",
-                src: "https://placehold.co/400x300/1a1a1a/FFF?text=Rick+Roll",
-                video: "../videos/dQw4w9WgXcQ_0.0_25.0.mp4"
-            },
-            { 
-                id: 2, 
-                title: "You Shall Not Pass", 
-                year: "2001", 
-                category: "Noisy Speech", 
-                emotion: "fearful/anxious", 
-                lang: "English",
-                sensitivity: "violence/gore",
-                transcription: "You shall not pass.",
-                summary: "A powerful wizard confronts a fiery monster on a narrow bridge, striking his staff and shouting defiantly.",
-                usage: "Used to jokingly or seriously deny someone access or prevent them from proceeding.", 
-                qType: "Usage & Application", 
-                question: "Which of the following is a humorous way a college student might use this meme?", 
-                options: [
-                    "A. When talking about the spread of the flu among students.",
-                    "B. When discussing how difficult the final exam was in a class.",
-                    "C. When presenting a final project in an art class.",
-                    "D. When asking the professor a question during a lecture."
-                ], 
-                correct: "B",
-                src: "https://placehold.co/400x300/331111/FFF?text=Gandalf",
-                video: "../videos/3xYXUeSmb-Y_0.0_6.0.mp4"
-            },
-            { 
-                id: 3, 
-                title: "GTA Wasted", 
-                year: "2013", 
-                category: "Sound Effect", 
-                emotion: "neutral", 
-                lang: "N/A",
-                sensitivity: "None",
-                transcription: "N/A",
-                summary: "The game over sound effect in Grand Theft Auto.",
-                usage: "Used when someone fails something.", 
-                qType: "World Knowledge", 
-                question: "Where will you likely be after you hear this sound?", 
-                options: [
-                    "A. Home.",
-                    "B. Hospital.",
-                    "C. Police office.",
-                    "D. Jail.",
-                    "E. Another world.",
-                    "F. Flight landing."
-                ], 
-                correct: "B",
-                src: "https://placehold.co/400x300/444444/FF0000?text=WASTED",
-                video: "../videos/K3kFQHKE0LA_0.0_7.0.wav"
-            },
-            { 
-                id: 4, 
-                title: "霸王洗发水", 
-                year: "2004", 
-                category: "Noisy Speech", 
-                emotion: "neutral", 
-                lang: "Chinese",
-                sensitivity: "None",
-                transcription: "当我第一次知道要拍那个洗发水广告的时候,其实我是拒绝的。因为我觉得,你不能叫我拍我就马上去拍,第一我要试一下,不然我又不想说,一个广告拍完后加上好多特技,那个头发,Duang,很黑,很亮,很柔,结果观众出来一定会骂我,根本没有这种头发,证明上面这个是假的。我说先给我试一下。后来我经过也知道它们是中药的,而且没有那种化学成分的。",
-                summary: "An actor says he first refused to shoot the shampoo ad because he was worried that special effects would make the hair look unreal, and only agreed after testing it.",
-                usage: "'Duang' is often used for a flashy, sudden, over-the-top sound or visual effect.", 
-                qType: "Usage & Application", 
-                question: "Which one of the following is the least suitable to be described by the onomatopoeic word in this clip?", 
-                options: [
-                    "A. Luxury race car.",
-                    "B. Silky-shiny hair.",
-                    "C. Dramatic sea view.",
-                    "D. New game with good visuals."
-                ], 
-                correct: "C",
-                src: "https://placehold.co/400x300/113311/FFF?text=Duang",
-                video: "../videos/DzCinbvtXaE_62.0_92.0.mp4"
-            },
-            { 
-                id: 5, 
-                title: "I Don't Like Sand", 
-                year: "2002", 
-                category: "Noisy Speech", 
-                emotion: "cringe/embarrassed", 
-                lang: "English",
-                sensitivity: "None",
-                transcription: "I don't like sand.",
-                summary: "Anakin Skywalker, in an awkward attempt at flirting, complains about sand.",
-                usage: "Used to mock awkward dialogue or complain about minor inconveniences.", 
-                qType: "Contextual Inference", 
-                question: "What is the speaker's primary motivation for making this comment about sand?", 
-                options: [
-                    "A. To provide a detailed geological analysis.",
-                    "B. To share a fond childhood memory.",
-                    "C. As an awkward attempt to compliment his companion.",
-                    "D. To change the subject to his favorite topic, desert planets."
-                ], 
-                correct: "C",
-                src: "https://placehold.co/400x300/887755/FFF?text=Sand",
-                video: "../videos/2tLf1JO5bvE_1.0_5.0.mp4"
-            },
-            { 
-                id: 6, 
-                title: "Windows Error", 
-                year: "2001", 
-                category: "Sound Effect", 
-                emotion: "angry/annoyed", 
-                lang: "N/A",
-                sensitivity: "None",
-                transcription: "N/A",
-                summary: "Infinite pop-up errors in Windows.",
-                usage: "The sound effect of the error is widely recognized and used for comic 'fail' beats.", 
-                qType: "World Knowledge", 
-                question: "Which operating system makes this sound?", 
-                options: [
-                    "A. Windows",
-                    "B. macOS",
-                    "C. Linux",
-                    "D. Android",
-                    "E. iOS"
-                ], 
-                correct: "A",
-                src: "https://placehold.co/400x300/0000AA/FFF?text=XP+Error",
-                video: "../videos/YnP94m5pwls_0.0_5.0.wav"
-            },
-            { 
-                id: 7, 
-                title: "Look at all those chickens", 
-                year: "2013", 
-                category: "Noisy Speech", 
-                emotion: "happy, surprised", 
-                lang: "English",
-                sensitivity: "None",
-                transcription: "Look at all those chickens",
-                summary: "A young girl, awestruck, looking at a flock of what are actually geese or ducks.",
-                usage: "Used to express excitement or amazement at a large number of things, often misidentifying them.", 
-                qType: "Contextual Inference", 
-                question: "What is the most likely reason for the person's exclamation?", 
-                options: [
-                    "A. She is scared of the animals.",
-                    "B. She is excited and misidentifying the animals.",
-                    "C. She is angry at the animals for making a mess.",
-                    "D. She is trying to sell the animals."
-                ], 
-                correct: "B",
-                src: "https://placehold.co/400x300/443311/FFF?text=Chickens",
-                video: "../videos/F-X4SLhorvw_26.0_30.0.mp4"
-            },
-            { 
-                id: 8, 
-                title: "Liszt's Hungarian Rhapsody No.2", 
-                year: "1851", 
-                category: "Music", 
-                emotion: "happy", 
-                lang: "N/A",
-                sensitivity: "None",
-                transcription: "N/A",
-                summary: "A fast, playful, dance-like solo piano music.",
-                usage: "Used as the background music, often in cartoons for chase and slapstick scenes.", 
-                qType: "Usage & Application", 
-                question: "On which of the following occasions will you most likely hear this music?", 
-                options: [
-                    "A. TV ads.", 
-                    "B. Cartoon.",
-                    "C. Daily news.",
-                    "D. Talk show."
-                ], 
-                correct: "B",
-                src: "https://placehold.co/400x300/222222/FFF?text=Liszt",
-                video: "../videos/LdH1hSWGFGU_445.0_475.0.wav"
-            },
-            { 
-                id: 9, 
-                title: "アムロ", 
-                year: "1979", 
-                category: "Clean Speech", 
-                emotion: "angry", 
-                lang: "Japanese",
-                sensitivity: "violence/gore",
-                transcription: "二度もぶった。親父にもぶたれたことないのに!",
-                summary: "A boy is complaining because someone slapped his cheeks.",
-                usage: "Used to dramatize trivial grievances by replacing ぶたれた with other words.", 
-                qType: "World Knowledge", 
-                question: "Why was the boy hit?", 
-                options: [
-                    "A. Because he cheated on his girlfriend.", 
-                    "B. Because he hit other people.",
-                    "C. Because he disobeyed military orders.",
-                    "D. Because he stole money from other people."
-                ], 
-                correct: "C",
-                src: "https://placehold.co/400x300/333333/FFF?text=Gundam",
-                video: "../videos/TvjkAtmcpv8_0.0_6.0.mp4"
-            },
-            { 
-                id: 10, 
-                title: "Goat Talking to Clueless Huh Cat", 
-                year: "2024", 
-                category: "Sound Effect", 
-                emotion: "surprised/shocked", 
-                lang: "N/A",
-                sensitivity: "None",
-                transcription: "N/A",
-                summary: "A goat talking to a cat.",
-                usage: "Used to depict a situation where one person passionately and intensely explains a complex or niche topic to another person who is utterly confused, overwhelmed, or uncomprehending.", 
-                qType: "Contextual Inference", 
-                question: "What kind of conversational dynamic are they used to represent?", 
-                options: [
-                    "A. One person chaotically spouting nonsense to a listener who responds with confusion.", 
-                    "B. A deep, meaningful conversation where both parties are fully engaged.",
-                    "C. An angry argument between two equally aggressive individuals.",
-                    "D. A calm and patient mentor teaching a highly attentive student."
-                ], 
-                correct: "A",
-                src: "https://placehold.co/400x300/554444/FFF?text=Goat+and+Cat",
-                video: "../videos/B7aSDu6Qh6U_0.0_9.0.mp4"
-            },
-            { 
-                id: 11, 
-                title: "괜찮아 딩딩딩", 
-                year: "2024", 
-                category: "Song", 
-                emotion: "happy", 
-                lang: "Korean",
-                sensitivity: "None",
-                transcription: "괜찮아 딩딩딩딩딩",
-                summary: "A cartoon character is performing the signature choreography along with the music.",
-                usage: "It's soramimi. The pronunciation is very close to \"No worries, ding ding ding ding ding\" in Korean. People use it when they want to say \"It's okay\", \"No worries.\"", 
-                qType: "Usage & Application", 
-                question: "When do we use this meme?", 
-                options: [
-                    "A. When we say \"That's awesome!\"", 
-                    "B. When we say \"It's okay.\"",
-                    "C. When we say \"What happened?\"",
-                    "D. When we say \"Never mind.\""
-                ], 
-                correct: "B",
-                src: "https://placehold.co/400x300/445566/FFF?text=DingDingDing",
-                video: "../videos/czL1D-bTXYM_0.0_10.0.mp4"
-            },
-            { 
-                id: 12, 
-                title: "Saul Goodman 3D", 
-                year: "2022", 
-                category: "Sound Effect", 
-                emotion: "cringe/embarrassed", 
-                lang: "N/A",
-                sensitivity: "None",
-                transcription: "N/A",
-                summary: "A 3D model of Saul Goodman staring intensely at the viewer while a dramatic, guitar-driven theme song plays.",
-                usage: "Used to represent a silent, deadpan, and judgmental reaction to an absurd, disastrous, or foolish situation unfolding.", 
-                qType: "Usage & Application", 
-                question: "Which of the following comments is the least appropriate comment for this video?", 
-                options: [
-                    "A. Every failure is not the end, nuclear technician.", 
-                    "B. The cast of Oppenheimer when Nolan says he won't use any CGI.",
-                    "C. Mr. Krabs when he walks anywhere.",
-                    "D. NFT owners staring at the monkey pixel art they spent their family inheritance on."
-                ], 
-                correct: "C",
-                src: "https://placehold.co/400x300/665544/FFF?text=Saul+Goodman",
-                video: "../videos/gDjMZvYWUdo_0.0_15.0.mp4"
-            },
-            { 
-                id: 13, 
-                title: "阿诺: 头顶尖尖的", 
-                year: "2022", 
-                category: "Noisy Speech", 
-                emotion: "happy, angry/annoyed, cringe/embarrassed", 
-                lang: "Chinese",
-                sensitivity: "None",
-                transcription: "头顶怎么尖尖的?那我问你,你是男的女的,如果你是女的你说这样的话啊,啊那我问你,你你你是女孩子,那我问你,那那你那你头顶是不是是不是尖的,那我问你,那我问你,你头顶是尖的呢,还是秃顶的啊,还是染黄色染红色的,那我问你,啊,还是戴假发的,如果是,如果你是男的,那我问你。",
-                summary: "When asked why his head is pointy, a man gets offended and then rambles, making a case analysis about whether men or women can have pointy heads.",
-                usage: "Used as an example of funny gibberish.", 
-                qType: "Contextual Inference", 
-                question: "Why is the man talking about head shape and hairstyles?", 
-                options: [
-                    "A. He is a live streamer and he wants to use this to hype himself.", 
-                    "B. He got genuinely mad at being teased and started rambling nonsense.",
-                    "C. He wants to share his findings on hairstyles.",
-                    "D. He believes everyone has pointy heads."
-                ], 
-                correct: "B",
-                src: "https://placehold.co/400x300/553333/FFF?text=Pointy+Head",
-                video: "../videos/yMhMtTo8zGc_0.0_29.0.mp4"
-            },
-            { 
-                id: 14, 
-                title: "Konishi: Good job", 
-                year: "2025", 
-                category: "Noisy Speech", 
-                emotion: "happy", 
-                lang: "English",
-                sensitivity: "None",
-                transcription: "Officer: Stop crying. Okay, so what's your job? \nKonishi: Job? Good job!",
-                summary: "A funny conversation between a customs officer and a girl who knows little English.",
-                usage: "Used as a cute and hilarious conversation example of people unfamiliar with English.", 
-                qType: "Contextual Inference", 
-                question: "What can we best infer from the clip?", 
-                options: [
-                    "A. The girl feels very confident about the work she does.", 
-                    "B. The girl isn't quite sure what the officer is trying to ask.",
-                    "C. The girl is complimenting how quickly the officer handles things.",
-                    "D. The officer is likely to get angry with the girl.",
-                    "E. The officer is starting to suspect what the girl does for work."
-                ], 
-                correct: "B",
-                src: "https://placehold.co/400x300/443355/FFF?text=Good+Job",
-                video: "../videos/1ooMfriJyuU_46.0_51.0.mp4"
-            },
-            { 
-                id: 15, 
-                title: "葛平超威蓝猫", 
-                year: "2009", 
-                category: "Clean Speech", 
-                emotion: "happy, surprised/shocked", 
-                lang: "Chinese",
-                sensitivity: "None",
-                transcription: "我说小朋友们谁愿意跟我蓝猫学一句配音呐?只听见下面有一个:我来!这时候我一看!小朋友们,人群之中钻出来一个光头!哇!他全身穿的都是我们蓝猫品牌的衣服,特别显眼。我一把就把他抱了起来。",
-                summary: "The voice actor calls for a voice-dubbing volunteer, and a bald kid in full Blue Cat clothes eagerly shouts out.",
-                usage: "Used as a prosody when someone with a bald head suddenly appears.", 
-                qType: "Humor & Popularity", 
-                question: "What is the funniest thing here?", 
-                options: [
-                    "A. Bare hair.", 
-                    "B. Cartoon suit.",
-                    "C. Shouting out.",
-                    "D. The voice acting."
-                ], 
-                correct: "A",
-                src: "https://placehold.co/400x300/334455/FFF?text=Blue+Cat",
-                video: "../videos/fAwDO4uP7zw_39.0_60.0.mp4"
-            },
-            { 
-                id: 16, 
-                title: "Nyan Cat", 
-                year: "2011", 
-                category: "Song", 
-                emotion: "happy", 
-                lang: "Japanese",
-                sensitivity: "None",
-                transcription: "N/A",
-                summary: "A cat keeps meowing over a bouncy, earworm of a beat.",
-                usage: "As a catchy melody to get stuck in someone's head.", 
-                qType: "World Knowledge", 
-                question: "What is the original purpose of this song?", 
-                options: [
-                    "A. Call for animal protection.", 
-                    "B. Charity art for a disaster.",
-                    "C. As a soundtrack from a famous game.",
-                    "D. A cat lover edits his own cat's voice for fun."
-                ], 
-                correct: "B",
-                src: "https://placehold.co/400x300/222233/FFF?text=Nyan+Cat",
-                video: "../videos/2yJgwwDcgV8_0.0_16.0.mp4"
-            },
-            { 
-                id: 17, 
-                title: "2000 years later", 
-                year: "1999", 
-                category: "Clean Speech", 
-                emotion: "neutral", 
-                lang: "English",
-                sensitivity: "None",
-                transcription: "2000 years later",
-                summary: "A voiceover making a transition, indicating that it requires a long wait until the upcoming event.",
-                usage: "To work as a transition between two scenes that are separated for a long time period.", 
-                qType: "Language Analysis", 
-                question: "What kind of event is this audio trying to describe?", 
-                options: [
-                    "A. Time flies fast.", 
-                    "B. Full of love.",
-                    "C. Tedious and lengthy."
-                ], 
-                correct: "C",
-                src: "https://placehold.co/400x300/444444/FFF?text=2000+Years+Later",
-                video: "../videos/7o_fRK-66bY_2.0_5.0.mp4"
-            },
-            { 
-                id: 18, 
-                title: "愛♡スクリ～ム", 
-                year: "2025", 
-                category: "Song", 
-                emotion: "happy", 
-                lang: "Japanese", 
-                sensitivity: "None", 
-                transcription: "みんな:ルビィちゃん!何が好き? A:チョコミントよりも、あ・な・た。みんな:歩夢ちゃん!何が好き? B:ストロベリーフレイバーよりも、あ・な・た。 みんな:四季ちゃん!何が好き? C:クッキー＆クリームよりも、あ・な・た。 みんな:何が好き? みんな:モチロン大好き、AiScReam!", 
-                summary: "The video shows three AiScReam members appearing one by one, each responding the fans when called by name, and ending together in AiScReam.",
-                usage: "Users primarily deploy memes to create a playful environment—for example, to act cute, tease, or clown around.", 
-                qType: "Language Analysis", 
-                question: "Which ice-cream flavor wasn't mentioned in this performance?", 
-                options: [
-                    "A. Chocolate Mint.", 
-                    "B. Coffee.", 
-                    "C. Strawberry.", 
-                    "D. Cookies & Cream."
-                ], 
-                correct: "B", 
-                src: "https://placehold.co/400x300/FF6699/FFF?text=AiScReam", 
-                video: "../videos/Dc7gc7BECk0_0.0_31.0.mp4" 
-            }
-
+            { id: 1, title: "Never Gonna Give You Up", year: "1987", category: "Song", emotion: "surprised/shocked, nostalgic", lang: "English", sensitivity: "None", transcription: "We're no strangers to love. You know the rules and...", summary: "The start of music video 'Never Gonna Give You Up'.", usage: "A bait and switch is usually done using a disguised hyperlink leading to this music video.", qType: "Humor & Popularity", question: "What is the top reason this song became so popular as a meme?", options: ["A. Unexpected appearance on the Internet.", "B. Often got edited and remixed for parody.", "C. A lot of references from other songs and movies.", "D. The singer has sung it a lot.", "E. It became a sports anthem.", "F. It is popularized from forums such as 4chan and reddit."], correct: "A", src: "https://placehold.co/400x300/1a1a1a/FFF?text=Rick+Roll", video: "../videos/dQw4w9WgXcQ_0.0_25.0.mp4" },
+            { id: 2, title: "You Shall Not Pass", year: "2001", category: "Noisy Speech", emotion: "fearful/anxious", lang: "English", sensitivity: "violence/gore", transcription: "You shall not pass.", summary: "A powerful wizard confronts a fiery monster on a narrow bridge, striking his staff and shouting defiantly.", usage: "Used to jokingly or seriously deny someone access or prevent them from proceeding.", qType: "Usage & Application", question: "Which of the following is a humorous way a college student might use this meme?", options: ["A. When talking about the spread of the flu among students.", "B. When discussing how difficult the final exam was in a class.", "C. When presenting a final project in an art class.", "D. When asking the professor a question during a lecture."], correct: "B", src: "https://placehold.co/400x300/331111/FFF?text=Gandalf", video: "../videos/3xYXUeSmb-Y_0.0_6.0.mp4" },
+            { id: 3, title: "GTA Wasted", year: "2013", category: "Sound Effect", emotion: "neutral", lang: "N/A", sensitivity: "None", transcription: "N/A", summary: "The game over sound effect in Grand Theft Auto.", usage: "Used when someone fails something.", qType: "World Knowledge", question: "Where will you likely be after you hear this sound?", options: ["A. Home.", "B. Hospital.", "C. Police office.", "D. Jail.", "E. Another world.", "F. Flight landing."], correct: "B", src: "https://placehold.co/400x300/444444/FF0000?text=WASTED", video: "../videos/K3kFQHKE0LA_0.0_7.0.wav" },
+            { id: 4, title: "霸王洗发水", year: "2004", category: "Noisy Speech", emotion: "neutral", lang: "Chinese", sensitivity: "None", transcription: "当我第一次知道要拍那个洗发水广告的时候...", summary: "An actor says he first refused to shoot the shampoo ad because he was worried that special effects would make the hair look unreal...", usage: "'Duang' is often used for a flashy, sudden, over-the-top sound or visual effect.", qType: "Usage & Application", question: "Which one of the following is the least suitable to be described by the onomatopoeic word in this clip?", options: ["A. Luxury race car.", "B. Silky-shiny hair.", "C. Dramatic sea view.", "D. New game with good visuals."], correct: "C", src: "https://placehold.co/400x300/113311/FFF?text=Duang", video: "../videos/DzCinbvtXaE_62.0_92.0.mp4" },
+            { id: 5, title: "I Don't Like Sand", year: "2002", category: "Noisy Speech", emotion: "cringe/embarrassed", lang: "English", sensitivity: "None", transcription: "I don't like sand.", summary: "Anakin Skywalker, in an awkward attempt at flirting, complains about sand.", usage: "Used to mock awkward dialogue or complain about minor inconveniences.", qType: "Contextual Inference", question: "What is the speaker's primary motivation for making this comment about sand?", options: ["A. To provide a detailed geological analysis.", "B. To share a fond childhood memory.", "C. As an awkward attempt to compliment his companion.", "D. To change the subject to his favorite topic, desert planets."], correct: "C", src: "https://placehold.co/400x300/887755/FFF?text=Sand", video: "../videos/2tLf1JO5bvE_1.0_5.0.mp4" },
+            { id: 6, title: "Windows Error", year: "2001", category: "Sound Effect", emotion: "angry/annoyed", lang: "N/A", sensitivity: "None", transcription: "N/A", summary: "Infinite pop-up errors in Windows.", usage: "The sound effect of the error is widely recognized and used for comic 'fail' beats.", qType: "World Knowledge", question: "Which operating system makes this sound?", options: ["A. Windows", "B. macOS", "C. Linux", "D. Android", "E. iOS"], correct: "A", src: "https://placehold.co/400x300/0000AA/FFF?text=XP+Error", video: "../videos/YnP94m5pwls_0.0_5.0.wav" },
+            { id: 7, title: "Look at all those chickens", year: "2013", category: "Noisy Speech", emotion: "happy, surprised", lang: "English", sensitivity: "None", transcription: "Look at all those chickens", summary: "A young girl, awestruck, looking at a flock of what are actually geese or ducks.", usage: "Used to express excitement or amazement at a large number of things, often misidentifying them.", qType: "Contextual Inference", question: "What is the most likely reason for the person's exclamation?", options: ["A. She is scared of the animals.", "B. She is excited and misidentifying the animals.", "C. She is angry at the animals for making a mess.", "D. She is trying to sell the animals."], correct: "B", src: "https://placehold.co/400x300/443311/FFF?text=Chickens", video: "../videos/F-X4SLhorvw_26.0_30.0.mp4" },
+            { id: 8, title: "Liszt's Hungarian Rhapsody No.2", year: "1851", category: "Music", emotion: "happy", lang: "N/A", sensitivity: "None", transcription: "N/A", summary: "A fast, playful, dance-like solo piano music.", usage: "Used as the background music, often in cartoons for chase and slapstick scenes.", qType: "Usage & Application", question: "On which of the following occasions will you most likely hear this music?", options: ["A. TV ads.", "B. Cartoon.", "C. Daily news.", "D. Talk show."], correct: "B", src: "https://placehold.co/400x300/222222/FFF?text=Liszt", video: "../videos/LdH1hSWGFGU_445.0_475.0.wav" },
+            { id: 9, title: "アムロ", year: "1979", category: "Clean Speech", emotion: "angry", lang: "Japanese", sensitivity: "violence/gore", transcription: "二度もぶった。親父にもぶたれたことないのに!", summary: "A boy is complaining because someone slapped his cheeks.", usage: "Used to dramatize trivial grievances by replacing ぶたれた with other words.", qType: "World Knowledge", question: "Why was the boy hit?", options: ["A. Because he cheated on his girlfriend.", "B. Because he hit other people.", "C. Because he disobeyed military orders.", "D. Because he stole money from other people."], correct: "C", src: "https://placehold.co/400x300/333333/FFF?text=Gundam", video: "../videos/TvjkAtmcpv8_0.0_6.0.mp4" },
+            { id: 10, title: "Goat Talking to Clueless Huh Cat", year: "2024", category: "Sound Effect", emotion: "surprised/shocked", lang: "N/A", sensitivity: "None", transcription: "N/A", summary: "A goat talking to a cat.", usage: "Used to depict a situation where one person passionately explains a complex topic to another person who is utterly confused.", qType: "Contextual Inference", question: "What kind of conversational dynamic are they used to represent?", options: ["A. One person chaotically spouting nonsense to a listener who responds with confusion.", "B. A deep, meaningful conversation where both parties are fully engaged.", "C. An angry argument between two equally aggressive individuals.", "D. A calm and patient mentor teaching a highly attentive student."], correct: "A", src: "https://placehold.co/400x300/554444/FFF?text=Goat+and+Cat", video: "../videos/B7aSDu6Qh6U_0.0_9.0.mp4" },
+            { id: 11, title: "괜찮아 딩딩딩", year: "2024", category: "Song", emotion: "happy", lang: "Korean", sensitivity: "None", transcription: "괜찮아 딩딩딩딩딩", summary: "A cartoon character is performing the signature choreography along with the music.", usage: "It's soramimi. The pronunciation is very close to \"No worries, ding ding ding...\"", qType: "Usage & Application", question: "When do we use this meme?", options: ["A. When we say \"That's awesome!\"", "B. When we say \"It's okay.\"", "C. When we say \"What happened?\"", "D. When we say \"Never mind.\""], correct: "B", src: "https://placehold.co/400x300/445566/FFF?text=DingDingDing", video: "../videos/czL1D-bTXYM_0.0_10.0.mp4" },
+            { id: 12, title: "Saul Goodman 3D", year: "2022", category: "Sound Effect", emotion: "cringe/embarrassed", lang: "N/A", sensitivity: "None", transcription: "N/A", summary: "A 3D model of Saul Goodman staring intensely at the viewer...", usage: "Used to represent a silent, deadpan, and judgmental reaction.", qType: "Usage & Application", question: "Which of the following comments is the least appropriate comment for this video?", options: ["A. Every failure is not the end, nuclear technician.", "B. The cast of Oppenheimer when Nolan says he won't use any CGI.", "C. Mr. Krabs when he walks anywhere.", "D. NFT owners staring at the monkey pixel art they spent their family inheritance on."], correct: "C", src: "https://placehold.co/400x300/665544/FFF?text=Saul+Goodman", video: "../videos/gDjMZvYWUdo_0.0_15.0.mp4" },
+            { id: 13, title: "阿诺: 头顶尖尖的", year: "2022", category: "Noisy Speech", emotion: "happy, angry", lang: "Chinese", sensitivity: "None", transcription: "头顶怎么尖尖的?...", summary: "When asked why his head is pointy, a man gets offended and then rambles...", usage: "Used as an example of funny gibberish.", qType: "Contextual Inference", question: "Why is the man talking about head shape and hairstyles?", options: ["A. He is a live streamer and he wants to use this to hype himself.", "B. He got genuinely mad at being teased and started rambling nonsense.", "C. He wants to share his findings on hairstyles.", "D. He believes everyone has pointy heads."], correct: "B", src: "https://placehold.co/400x300/553333/FFF?text=Pointy+Head", video: "../videos/yMhMtTo8zGc_0.0_29.0.mp4" },
+            { id: 14, title: "Konishi: Good job", year: "2025", category: "Noisy Speech", emotion: "happy", lang: "English", sensitivity: "None", transcription: "Job? Good job!", summary: "A funny conversation between a customs officer and a girl who knows little English.", usage: "Used as a cute and hilarious conversation example...", qType: "Contextual Inference", question: "What can we best infer from the clip?", options: ["A. The girl feels very confident about the work she does.", "B. The girl isn't quite sure what the officer is trying to ask.", "C. The girl is complimenting how quickly the officer handles things.", "D. The officer is likely to get angry with the girl.", "E. The officer is starting to suspect what the girl does for work."], correct: "B", src: "https://placehold.co/400x300/443355/FFF?text=Good+Job", video: "../videos/1ooMfriJyuU_46.0_51.0.mp4" },
+            { id: 15, title: "葛平超威蓝猫", year: "2009", category: "Clean Speech", emotion: "happy, surprised", lang: "Chinese", sensitivity: "None", transcription: "我说小朋友们谁愿意跟我蓝猫学一句配音呐?...", summary: "The voice actor calls for a voice-dubbing volunteer, and a bald kid in full Blue Cat clothes eagerly shouts out.", usage: "Used as a prosody when someone with a bald head suddenly appears.", qType: "Humor & Popularity", question: "What is the funniest thing here?", options: ["A. Bare hair.", "B. Cartoon suit.", "C. Shouting out.", "D. The voice acting."], correct: "A", src: "https://placehold.co/400x300/334455/FFF?text=Blue+Cat", video: "../videos/fAwDO4uP7zw_39.0_60.0.mp4" },
+            { id: 16, title: "Nyan Cat", year: "2011", category: "Song", emotion: "happy", lang: "Japanese", sensitivity: "None", transcription: "N/A", summary: "A cat keeps meowing over a bouncy, earworm of a beat.", usage: "As a catchy melody to get stuck in someone's head.", qType: "World Knowledge", question: "What is the original purpose of this song?", options: ["A. Call for animal protection.", "B. Charity art for a disaster.", "C. As a soundtrack from a famous game.", "D. A cat lover edits his own cat's voice for fun."], correct: "B", src: "https://placehold.co/400x300/222233/FFF?text=Nyan+Cat", video: "../videos/2yJgwwDcgV8_0.0_16.0.mp4" },
+            { id: 17, title: "2000 years later", year: "1999", category: "Clean Speech", emotion: "neutral", lang: "English", sensitivity: "None", transcription: "2000 years later", summary: "A voiceover making a transition...", usage: "To work as a transition between two scenes that are separated for a long time period.", qType: "Language Analysis", question: "What kind of event is this audio trying to describe?", options: ["A. Time flies fast.", "B. Full of love.", "C. Tedious and lengthy."], correct: "C", src: "https://placehold.co/400x300/444444/FFF?text=2000+Years+Later", video: "../videos/7o_fRK-66bY_2.0_5.0.mp4" },
+            { id: 18, title: "愛♡スクリ～ム", year: "2025", category: "Song", emotion: "happy", lang: "Japanese", sensitivity: "None", transcription: "AiScReam...", summary: "The video shows three AiScReam members appearing one by one...", usage: "Users primarily deploy memes to create a playful environment.", qType: "Language Analysis", question: "Which ice-cream flavor wasn't mentioned in this performance?", options: ["A. Chocolate Mint.", "B. Coffee.", "C. Strawberry.", "D. Cookies & Cream."], correct: "B", src: "https://placehold.co/400x300/FF6699/FFF?text=AiScReam", video: "../videos/Dc7gc7BECk0_0.0_31.0.mp4" }
         ];
-    
-        // --- 3D ENGINE ---
+
+        // --- 2. 3D WHEEL & CARD LOGIC ---
         const radiusX = 450;
         const radiusZ = 200;
         const itemAngleStep = 360 / memes.length;
@@ -822,13 +479,12 @@
         const scene = document.getElementById('scene');
         const cardContainer = document.getElementById('cardContainer');
     
-        function init() {
+        function initWheel() {
             memes.forEach((meme, index) => {
                 const el = document.createElement('div');
                 el.className = 'item';
                 el.style.backgroundImage = `url('${meme.src}')`;
                 el.innerHTML = `<div class="item-label">${meme.title}</div>`;
-                // Store index so we can easily find it later
                 el.dataset.index = index;
                 const initialTheta = index * itemAngleStep;
                 el.dataset.baseTheta = initialTheta; 
@@ -837,54 +493,35 @@
     
             orbit.style.transform = "rotateX(-10deg)";
             
-            // Setup Drag Events
             setupEvents();
     
             // Spin Logic
             const randomIndex = Math.floor(Math.random() * memes.length);
-            const targetTheta = randomIndex * itemAngleStep;
-            
-            // We want to land such that targetTheta + currentAngle = 90 (front)
-            // But currentAngle starts at 90. 
-            // Logic: active item is one near 90deg.
-            // Let's just spin a few times and land near 0 relative offset
             const stopAngle = 90 - (randomIndex * itemAngleStep) - (360 * 3);
-            
             animateSpin(currentAngle, stopAngle, 2500); 
         }
     
         function setupEvents() {
-            // Mouse Events
             scene.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                isSpinning = false; // Stop auto-spin on interaction
-                startX = e.clientX;
-                lastX = e.clientX;
-                cardContainer.classList.add('hidden'); // Hide card while dragging
+                isDragging = true; isSpinning = false;
+                startX = e.clientX; lastX = e.clientX;
+                cardContainer.classList.add('hidden');
             });
-    
             window.addEventListener('mousemove', (e) => {
                 if (!isDragging) return;
                 const delta = e.clientX - lastX;
                 lastX = e.clientX;
-                velocity = delta * 0.3; // Sensitivity
+                velocity = delta * 0.3;
                 currentAngle += velocity;
                 updateRender();
             });
+            window.addEventListener('mouseup', () => { isDragging = false; });
     
-            window.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
-    
-            // Touch Events
             scene.addEventListener('touchstart', (e) => {
-                isDragging = true;
-                isSpinning = false;
-                startX = e.touches[0].clientX;
-                lastX = e.touches[0].clientX;
+                isDragging = true; isSpinning = false;
+                startX = e.touches[0].clientX; lastX = e.touches[0].clientX;
                 cardContainer.classList.add('hidden');
             }, {passive: false});
-    
             window.addEventListener('touchmove', (e) => {
                 if (!isDragging) return;
                 const clientX = e.touches[0].clientX;
@@ -894,10 +531,7 @@
                 currentAngle += velocity;
                 updateRender();
             }, {passive: false});
-    
-            window.addEventListener('touchend', () => {
-                isDragging = false;
-            });
+            window.addEventListener('touchend', () => { isDragging = false; });
         }
     
         function animateSpin(start, end, duration) {
@@ -906,18 +540,12 @@
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                // Ease Out Cubic
                 const ease = 1 - Math.pow(1 - progress, 3);
                 currentAngle = start + (end - start) * ease;
-                
                 updateRender(); 
-                
-                if (progress < 1) {
-                    requestAnimationFrame(step);
-                } else {
-                    isSpinning = false;
-                    currentAngle = end; 
-                    // Ensure we are perfectly snapped
+                if (progress < 1) requestAnimationFrame(step);
+                else {
+                    isSpinning = false; currentAngle = end; 
                     loop();
                     cardContainer.classList.remove('hidden');
                 }
@@ -927,26 +555,15 @@
     
         function loop() {
             if (!isSpinning && !isDragging) {
-                velocity *= 0.95; // Friction
+                velocity *= 0.95; 
                 currentAngle += velocity;
-                
-                if (Math.abs(velocity) > 0.1) {
-                    cardContainer.classList.add('hidden');
-                } else {
-                    // Snap to nearest item
-                    // We want an item (baseTheta + currentAngle) % 360 == 90
-                    // So currentAngle should result in (90 - baseTheta)
-                    // The itemAngleStep grid is predictable.
-                    
+                if (Math.abs(velocity) > 0.1) cardContainer.classList.add('hidden');
+                else {
                     const relativeAngle = currentAngle - 90;
                     const snapTarget = Math.round(relativeAngle / itemAngleStep) * itemAngleStep + 90;
-                    
-                    // Smooth snap
                     currentAngle += (snapTarget - currentAngle) * 0.1;
-    
                     if(Math.abs(snapTarget - currentAngle) < 0.05) {
                         currentAngle = snapTarget;
-                        // Reveal Card if stopped
                         cardContainer.classList.remove('hidden');
                     }
                 }
@@ -961,28 +578,19 @@
                 const baseTheta = parseFloat(item.dataset.baseTheta);
                 const theta = baseTheta + currentAngle;
                 const rad = theta * (Math.PI / 180);
-                
-                // Calculate 3D position
                 const x = radiusX * Math.cos(rad);
                 const z = radiusZ * Math.sin(rad);
-                
-                // Scale and Opacity based on Z-depth
-                // z ranges from -radiusZ to +radiusZ
                 const scale = 0.6 + (0.4 * (z + radiusZ) / (2 * radiusZ));
                 const opacity = 0.4 + (0.6 * (z + radiusZ) / (2 * radiusZ));
-    
                 item.style.transform = `translate3d(${x}px, 0, ${z}px) scale(${scale})`;
                 item.style.zIndex = Math.floor(z + radiusZ);
                 item.style.opacity = opacity;
     
-                // Normalize angle to check who is at the "front" (90 degrees)
                 let normTheta = theta % 360;
                 if(normTheta < 0) normTheta += 360;
-                
-                // If item is roughly at 90 degrees (+/- 10)
                 if (normTheta > 80 && normTheta < 100) {
                     if (!item.classList.contains('active')) {
-                        items.forEach(i => i.classList.remove('active')); // clear others
+                        items.forEach(i => i.classList.remove('active')); 
                         item.classList.add('active');
                         updateCard(index);
                     }
@@ -995,8 +603,6 @@
         function updateCard(index) {
             const data = memes[index];
             if (!data) return;
-            
-            // Text updates
             document.getElementById('cardTitle').innerText = data.title;
             document.getElementById('cardYear').innerText = data.year;
             document.getElementById('cardCategory').innerText = data.category;
@@ -1006,73 +612,113 @@
             document.getElementById('cardQType').innerText = data.qType;
             document.getElementById('cardQuestion').innerText = data.question;
 
-            // --- MEDIA LOGIC UPDATE ---
             const videoEl = document.getElementById('cardVideo');
             const audioContainer = document.getElementById('cardAudioContainer');
             const audioPlayer = document.getElementById('cardAudioPlayer');
             const audioPoster = document.getElementById('cardAudioPoster');
 
-            // Reset everything first
-            videoEl.pause();
-            audioPlayer.pause();
-            videoEl.currentTime = 0;
-            audioPlayer.currentTime = 0;
+            videoEl.pause(); audioPlayer.pause();
+            videoEl.currentTime = 0; audioPlayer.currentTime = 0;
 
             const mediaPath = data.video || "";
-            // Check if it is a WAV file (Audio Mode)
             const isAudio = mediaPath.toLowerCase().endsWith('.wav');
 
             if (isAudio) {
-                // --- AUDIO MODE ---
-                videoEl.style.display = 'none';           // Hide Video Tag
-                audioContainer.style.display = 'flex';    // Show Audio Container
-                
-                // Set the Audio Source
+                videoEl.style.display = 'none';
+                audioContainer.style.display = 'flex';
                 audioPlayer.src = mediaPath;
-                
-                // Set the Static Image (Use the meme image, or your custom speaker icon)
-                // Currently using data.src (Meme Image) + the Overlay Icon defined in HTML
                 let posterSrc = data.src;
-                if (posterSrc.includes('placehold.co') && posterSrc.includes('?text=')) {
-                    posterSrc += '%0A(audio-only)';
-                }
+                if (posterSrc.includes('placehold.co')) posterSrc += '%0A(audio-only)';
                 audioPoster.src = posterSrc;
-                
             } else {
-                // --- VIDEO MODE ---
-                audioContainer.style.display = 'none';    // Hide Audio Container
-                videoEl.style.display = 'block';          // Show Video Tag
-                
+                audioContainer.style.display = 'none';
+                videoEl.style.display = 'block';
                 videoEl.poster = data.src;
                 videoEl.src = mediaPath;
             }
-            // --------------------------
 
             document.getElementById('metaLang').innerText = ": " + data.lang;
             document.getElementById('metaSens').innerText = ": " + data.sensitivity;
-            document.getElementById('metaTrans').innerText = ": " + (data.transcription.length > 99999999 ? data.transcription.substring(0,50) + "..." : data.transcription);
+            document.getElementById('metaTrans').innerText = ": " + (data.transcription.length > 50 ? data.transcription.substring(0,50) + "..." : data.transcription);
             
             const ul = document.getElementById('cardOptions');
             ul.innerHTML = '';
-            
             data.options.forEach(opt => {
                 const li = document.createElement('li');
                 const letter = opt.split('.')[0].trim(); 
                 const text = opt.substring(letter.length + 1);
-                
-                if (data.correct && letter === data.correct) {
-                    li.classList.add('correct-answer');
-                }
-
+                if (data.correct && letter === data.correct) li.classList.add('correct-answer');
                 li.innerHTML = `<span class="opt-letter">${letter}.</span>${text}`;
                 ul.appendChild(li);
             });
         }
-    
-        // --- START ---
-        init();
-    </script>
 
-    
+        // --- 3. CHART LOGIC (UPDATED: TOOLTIP CALCULATION + MEME CARD BORDER MATCH) ---
+        function initCharts() {
+            // Keep the "Very Light" palette as requested before
+            const veryLightBluePalette7 = [
+                '#A6E1FA', '#BAEAFB', '#CEF0FD', '#DFF6FE', '#EDFBFF', '#F4FDFF', '#FAFEFF'
+            ];
+            const veryLightBluePalette5 = [
+                '#A6E1FA', '#BAEAFB', '#CEF0FD', '#DFF6FE', '#EDFBFF'
+            ];
+
+            const totalClips = 1032;
+
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            // Customize the label to show Count
+                            label: function(context) {
+                                // Calculate number of clips
+                                const count = Math.round(totalClips * (context.raw / 100));
+                                // Format: " 22.1% (228 clips)"
+                                return ` ${context.raw}% (${count} clips)`;
+                            }
+                        }
+                    }
+                }
+            };
+
+            new Chart(document.getElementById('chartQuestionTypes'), {
+                type: 'pie',
+                data: {
+                    labels: ['World Knowledge', 'Contextual Inference', 'Usage & Application', 'Humor & Popularity', 'Language Analysis', 'Emotion Analysis', 'Audio Analysis'],
+                    datasets: [{ data: [22.1, 21.7, 18.8, 12.9, 12.0, 7.1, 5.4], backgroundColor: veryLightBluePalette7, borderWidth: 1, borderColor: '#fff' }]
+                },
+                options: commonOptions
+            });
+
+            new Chart(document.getElementById('chartSoundCategories'), {
+                type: 'pie',
+                data: {
+                    labels: ['Noisy Speech', 'Clean Speech', 'Song', 'Music', 'Sound Effect'],
+                    datasets: [{ data: [34.6, 27.2, 16.6, 11.4, 10.2], backgroundColor: veryLightBluePalette5, borderWidth: 1, borderColor: '#fff' }]
+                },
+                options: commonOptions
+            });
+
+            new Chart(document.getElementById('chartLanguages'), {
+                type: 'pie',
+                data: {
+                    labels: ['English', 'Chinese', 'Non-Language', 'Others', 'Japanese', 'Korean', 'Persian'],
+                    datasets: [{ data: [29.0, 24.7, 21.2, 7.7, 7.4, 5.4, 4.7], backgroundColor: veryLightBluePalette7, borderWidth: 1, borderColor: '#fff' }]
+                },
+                options: commonOptions
+            });
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initWheel();
+            initCharts();
+        });
+
+    </script>
 </body>
 </html>
