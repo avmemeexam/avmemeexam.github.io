@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AVMeme Exam</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         :root {
@@ -18,35 +17,33 @@
             --text-sub: #666666;
         }
 
-        /* --- SCROLL SNAP & SLIDE LAYOUT --- */
+        /* --- LAYOUT SETUP --- */
         html, body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            overflow-y: scroll;
-            scroll-snap-type: y mandatory;
-            scroll-behavior: smooth;
             background-color: var(--bg);
             color: var(--text-main);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
+            overflow: hidden; /* Prevent scrolling since it is a single screen */
         }
 
-        /* Common Slide Styling */
-        .slide {
+        /* Main Container to center everything vertically */
+        .main-container {
             width: 100%;
             height: 100vh;
-            scroll-snap-align: start;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             position: relative;
-            overflow: hidden; 
+            padding: 20px 0;
+            box-sizing: border-box;
         }
 
-        /* --- SLIDE 1: HEADER & WHEEL --- */
+        /* --- HEADER & WHEEL --- */
         header {
             text-align: center;
             z-index: 10;
@@ -57,18 +54,18 @@
 
         .logo {
             width: 80%;
-            max-width: 1000px;
+            max-width: 1000px; 
             height: auto;
             display: block;
             margin: 0 auto 5px auto; 
             filter: drop-shadow(0 0 5px rgba(0,0,0,0.2)); 
         }
 
-        p.subtitle { color: #888; font-style: italic; margin-top: 0; font-size: 1rem; }
+        p.subtitle { color: #888; font-style: italic; margin-top: 0; font-size: 0.8rem; }
 
         .main-description {
             color: #444;
-            font-size: 1.1rem;
+            font-size: 1rem;
             line-height: 1.3;
             max-width: 800px;
             margin: 5px auto 0 auto;
@@ -262,88 +259,19 @@
             background-color: rgba(187, 225, 238, 0.3); border-radius: 4px;
         }
 
-        /* --- SLIDE 2: STATS --- */
-        .stats-container {
-            width: 70%;
-            max-width: 1100px;
-            background: var(--card-bg);
-            /* Updated to use CSS Variable for consistency with Meme Card */
-            border-top: 5px solid var(--primary); 
-            padding: 70px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .stats-title {
-            color: #666666; /* Dark Gray */
-            margin-bottom: 10px; /* Reduced bottom margin to sit closer to subtitle */
-            font-size: 2rem;     /* Slightly larger for impact */
-            font-weight: 700;
-            text-align: center;
-            line-height: 1.2;
-        }
-
-        .stats-subtitle {
-            color: #666666; /* Slightly lighter gray for hierarchy */
-            font-size: 1.1rem;
-            text-align: center;
-            margin-top: 0;
-            margin-bottom: 40px; /* Space between text and charts */
-            max-width: 800px;
-            line-height: 1.5;
-        }
-
-        .charts-row {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            width: 100%;
-            gap: 30px;
-        }
-
-        .chart-wrapper {
-            flex: 1;
-            min-width: 250px;
-            max-width: 320px;
-            height: 320px; 
-            position: relative;
-        }
-
-        .chart-wrapper h3 {
-            text-align: center; color: var(--secondary); margin-bottom: 10px;
-        }
-
-        /* SCROLL INDICATOR */
-        .scroll-indicator {
-            position: absolute; bottom: 20px; left: 50%;
-            transform: translateX(-50%); opacity: 0.5;
-            cursor: pointer; animation: bounce 2s infinite;
-            font-size: 2rem; color: #aaa;
-        }
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
-            40% {transform: translateX(-50%) translateY(-10px);}
-            60% {transform: translateX(-50%) translateY(-5px);}
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
-            .slide { height: auto; min-height: 100vh; padding: 10px; }
+            .main-container { height: auto; min-height: 100vh; padding: 10px; overflow-y: auto; }
             .orbit { width: 300px; height: 300px; }
             .item { width: 100px; height: 70px; margin-left: -50px; margin-top: -35px; }
             .meme-card-container { flex-direction: column; max-height: none; overflow: visible; }
             .video-column { max-width: 100%; }
-            .charts-row { flex-direction: column; align-items: center; }
-            .chart-wrapper { width: 100%; height: 250px; }
         }
     </style>
 </head>
 <body>
 
-    <section class="slide" id="slide1">
+    <div class="main-container">
         <header>
             <img src="../image/logo.png" alt="AVMeme Exam Logo" class="logo">
             <p class="main-description">
@@ -409,36 +337,7 @@
                 </div>
             </div>
         </div>
-
-        <div class="scroll-indicator" onclick="document.getElementById('slide2').scrollIntoView()">
-            ▼
-        </div>
-    </section>
-
-    <section class="slide" id="slide2">
-        <div class="stats-container">
-            <h2 class="stats-title">Testing LLMs Content, Context & Cultural Understanding</h2>
-            <p class="stats-subtitle">
-                Covering well-known, multilingual Internet speeches, songs, music, and sound effects.
-            </p>
-            <div class="charts-row">
-                <div class="chart-wrapper">
-                    <h3>Question Types</h3>
-                    <canvas id="chartQuestionTypes"></canvas>
-                </div>
-
-                <div class="chart-wrapper">
-                    <h3>Sound Categories</h3>
-                    <canvas id="chartSoundCategories"></canvas>
-                </div>
-
-                <div class="chart-wrapper">
-                    <h3>Languages</h3>
-                    <canvas id="chartLanguages"></canvas>
-                </div>
-            </div>
-        </div>
-    </section>
+    </div>
 
     <script>
         // --- 1. MEME DATA ---
@@ -653,70 +552,9 @@
             });
         }
 
-        // --- 3. CHART LOGIC (UPDATED: TOOLTIP CALCULATION + MEME CARD BORDER MATCH) ---
-        function initCharts() {
-            // Keep the "Very Light" palette as requested before
-            const veryLightBluePalette7 = [
-                '#A6E1FA', '#BAEAFB', '#CEF0FD', '#DFF6FE', '#EDFBFF', '#F4FDFF', '#FAFEFF'
-            ];
-            const veryLightBluePalette5 = [
-                '#A6E1FA', '#BAEAFB', '#CEF0FD', '#DFF6FE', '#EDFBFF'
-            ];
-
-            const totalClips = 1032;
-
-            const commonOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        enabled: true,
-                        callbacks: {
-                            // Customize the label to show Count
-                            label: function(context) {
-                                // Calculate number of clips
-                                const count = Math.round(totalClips * (context.raw / 100));
-                                // Format: " 22.1% (228 clips)"
-                                return ` ${context.raw}% (${count} clips)`;
-                            }
-                        }
-                    }
-                }
-            };
-
-            new Chart(document.getElementById('chartQuestionTypes'), {
-                type: 'pie',
-                data: {
-                    labels: ['World Knowledge', 'Contextual Inference', 'Usage & Application', 'Humor & Popularity', 'Language Analysis', 'Emotion Analysis', 'Audio Analysis'],
-                    datasets: [{ data: [22.1, 21.7, 18.8, 12.9, 12.0, 7.1, 5.4], backgroundColor: veryLightBluePalette7, borderWidth: 1, borderColor: '#fff' }]
-                },
-                options: commonOptions
-            });
-
-            new Chart(document.getElementById('chartSoundCategories'), {
-                type: 'pie',
-                data: {
-                    labels: ['Noisy Speech', 'Clean Speech', 'Song', 'Music', 'Sound Effect'],
-                    datasets: [{ data: [34.6, 27.2, 16.6, 11.4, 10.2], backgroundColor: veryLightBluePalette5, borderWidth: 1, borderColor: '#fff' }]
-                },
-                options: commonOptions
-            });
-
-            new Chart(document.getElementById('chartLanguages'), {
-                type: 'pie',
-                data: {
-                    labels: ['English', 'Chinese', 'Non-Language', 'Others', 'Japanese', 'Korean', 'Persian'],
-                    datasets: [{ data: [29.0, 24.7, 21.2, 7.7, 7.4, 5.4, 4.7], backgroundColor: veryLightBluePalette7, borderWidth: 1, borderColor: '#fff' }]
-                },
-                options: commonOptions
-            });
-        }
-
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             initWheel();
-            initCharts();
         });
 
     </script>
