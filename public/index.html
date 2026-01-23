@@ -36,7 +36,7 @@
         .slide {
             width: 100%;
             min-height: 100vh; 
-            height: auto;       
+            height: auto;        
             scroll-snap-align: start;
             display: flex;
             flex-direction: column;
@@ -46,7 +46,7 @@
             padding-bottom: 60px;
             position: relative;
             overflow: visible;
-            box-sizing: border-box; /* Important for padding */
+            box-sizing: border-box; 
         }
 
         /* --- SLIDE 1: HEADER & WHEEL --- */
@@ -61,7 +61,7 @@
 
         .logo {
             width: 80%;
-            max-width: 800px; /* Reduced for better scaling */
+            max-width: 800px;
             height: auto;
             display: block;
             margin: 0 auto 5px auto; 
@@ -85,7 +85,7 @@
         .scene {
             position: relative;
             width: 100%;              
-            max-width: 1800px;       
+            max-width: 1800px;        
             margin: 0 auto 10px auto;
             height: 150px;
             display: flex;
@@ -95,7 +95,7 @@
             touch-action: none;
             flex-shrink: 0;
             margin-bottom: 20px; 
-            overflow: visible; /* Changed from hidden */
+            overflow: visible; 
             perspective: 1000px;
         }
         .scene:active { cursor: grabbing; }
@@ -125,11 +125,10 @@
             background-size: cover;
             background-position: center;
             color: white; 
-            /* Centering fix */
             top: 50%;
             left: 50%;
-            margin-left: -60px; /* Half of width */
-            margin-top: -40px;  /* Half of height */
+            margin-left: -60px; 
+            margin-top: -40px;  
             transition: border-color 0.3s, box-shadow 0.3s, opacity 0.3s;
         }
 
@@ -189,13 +188,13 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            max-width: 400px; /* Slightly larger limit */
+            max-width: 400px; 
             min-width: 250px;
         }
 
         .video-placeholder {
             width: 100%;
-            aspect-ratio: 16/9; /* Enforce aspect ratio */
+            aspect-ratio: 16/9; 
             background: #000;
             position: relative;
             display: flex;
@@ -238,13 +237,13 @@
             flex-direction: column;
             height: auto; 
             padding-right: 0;
-            min-width: 0; /* Prevents flex items from overflowing */
+            min-width: 0; 
         }
 
         .header-row {
             display: flex; justify-content: space-between; align-items: flex-end;
             border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; margin-bottom: 8px;
-            flex-wrap: wrap; /* Allow wrapping on small screens */
+            flex-wrap: wrap; 
         }
         h2 { margin: 0; font-size: 1.5rem; color: #111; word-break: break-word;}
         .year-tag { font-family: monospace; color: #999; font-size: 1rem; font-weight: bold; }
@@ -515,7 +514,7 @@
         }
 
         .sup-icon {
-            width: 22px;       
+            width: 22px;        
             height: auto;
             vertical-align: super;
             margin-left: 2px;
@@ -535,7 +534,7 @@
             .slide { 
                 height: auto; 
                 min-height: 100vh; 
-                padding: 15px 10px 80px 10px; /* More padding bottom for scroll indicator */
+                padding: 15px 10px 80px 10px; 
             }
             
             /* Logo & Text scaling */
@@ -556,14 +555,30 @@
             .info-panel { padding-left: 0; }
             .header-row { flex-direction: column; align-items: flex-start; gap: 5px; }
 
-            /* Stats & Charts */
+            /* Stats & Charts - Optimized for One Column per Row */
             .stats-container { width: 95%; padding: 25px 15px; }
             .stats-title { font-size: 1.5rem; }
             .stats-subtitle { font-size: 0.9rem; margin-bottom: 25px; }
             
-            .charts-row { flex-direction: column; align-items: center; gap: 40px; }
-            .chart-wrapper { width: 100%; height: 260px; max-width: none; }
-            .chart-wrapper.full-width { height: 300px; }
+            /* Slide 2 Specific: Stack charts vertically */
+            .charts-row { 
+                display: flex;
+                flex-direction: column; 
+                align-items: center; 
+                gap: 50px; /* Space between the pie charts */
+                width: 100%;
+            }
+
+            .chart-wrapper { 
+                width: 100%; 
+                max-width: 350px; /* Restrict max width so pies don't look stretched */
+                height: 300px;    /* Height to fit the pie and legend */
+                flex: none;       /* Disable flex resizing behavior */
+                margin: 0 auto;   /* Center align */
+            }
+
+            /* Slide 3 Bar Charts */
+            .chart-wrapper.full-width { height: 350px; }
 
             /* Footer buttons */
             .paper-links-row { flex-direction: column; gap: 15px; width: 100%; }
@@ -597,7 +612,7 @@
             <div class="video-column">
                 <div class="video-placeholder">
                     <video id="cardVideo" controls playsinline style="display:block;">
-                        Your browser does not support the video tag.
+                        <img src="" alt="Video Placeholder">
                     </video>
                 
                     <div id="cardAudioContainer" class="audio-mode-container" style="display:none;">
