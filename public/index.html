@@ -69,6 +69,19 @@
         }
 
         p.subtitle { color: #888; font-style: italic; margin-top: 0; font-size: 1rem; }
+        
+        /* Make the bell interactive despite header pointer-events: none */
+        .bell-btn {
+            pointer-events: auto;
+            cursor: pointer;
+            font-style: normal;
+            margin-left: 8px;
+            transition: transform 0.2s ease;
+            display: inline-block;
+        }
+        .bell-btn:hover {
+            transform: scale(1.2) rotate(15deg);
+        }
 
         .main-description {
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -598,7 +611,10 @@
                 A Multimodal Multilingual Multicultural Benchmark for<br>
                 LLMs' Contextual and Cultural Knowledge and Thinking
             </p>
-            <p class="subtitle">Presented by AVMeme Team</p>
+            <p class="subtitle">
+                Presented by AVMeme Team
+                <span class="bell-btn" title="Jump to Bottom" onclick="document.getElementById('slide4').scrollIntoView()">🔔</span>
+            </p>
         </header>
 
         <div class="scene" id="scene">
