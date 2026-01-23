@@ -673,7 +673,7 @@
 
     <section class="slide" id="slide2">
         <div class="stats-container">
-            <h2 class="stats-title">Testing MLLMs Content, Context & Cultural Understanding</h2>
+            <h2 class="stats-title">Testing LLMs Content, Context & Cultural Understanding</h2>
             <p class="stats-subtitle">
                 Covering well-known, multilingual Internet speeches, songs, music, and sound effects.
             </p>
@@ -1519,11 +1519,16 @@
                         enabled: true,
                         callbacks: {
                             label: function(context) {
+                                // Force the raw number to be a float with 1 decimal place
+                                const value = Number(context.raw).toFixed(1); 
+                                
                                 if(context.chart.config.type === 'pie') {
                                     const count = Math.round(totalClips * (context.raw / 100));
-                                    return ` ${context.raw}% (${count} clips)`;
+                                    return ` ${value}% (${count} clips)`;
                                 }
-                                return ` ${context.raw}%`;
+                                
+                                // This ensures "46" becomes "46.0%"
+                                return ` ${value}%`; 
                             }
                         }
                     }
@@ -1619,15 +1624,31 @@
                         y: { beginAtZero: true, max: 100, title: {display: true, text: 'Accuracy (%)'} },
                         x: { 
                             ticks: { 
-                                font: { weight: 'bold', size: 10},
+                                font: { weight: 'bold', size: 16},
                                 autoSkip: false,
-                                maxRotation: 90,
-                                minRotation: 45
+                                maxRotation: 45,
+                                minRotation: 0
                             } 
                         }
                     },
                     plugins: {
-                        legend: {position: 'top', labels: {font: {size: 10}}}
+                        legend: { position: 'top', labels: { font: { size: 16 } } },
+                        // ADD THIS TOOLTIP BLOCK HERE:
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    // This forces 1 decimal place (e.g., 46.0)
+                                    if (context.parsed.y !== null) {
+                                        label += Number(context.parsed.y).toFixed(1) + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
                     }
                 }
             });
@@ -1666,15 +1687,31 @@
                         y: { beginAtZero: true, max: 100, title: {display: true, text: 'Accuracy (%)'} },
                          x: { 
                             ticks: { 
-                                font: { weight: 'bold', size: 10},
+                                font: { weight: 'bold', size: 16},
                                 autoSkip: false,
-                                maxRotation: 90,
-                                minRotation: 45
+                                maxRotation: 45,
+                                minRotation: 0
                             } 
                         }
                     },
                     plugins: {
-                        legend: {position: 'top', labels: {font: {size: 10}}}
+                        legend: { position: 'top', labels: { font: { size: 16 } } },
+                        // ADD THIS TOOLTIP BLOCK HERE:
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    // This forces 1 decimal place (e.g., 46.0)
+                                    if (context.parsed.y !== null) {
+                                        label += Number(context.parsed.y).toFixed(1) + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
                     }
                 }
             });
