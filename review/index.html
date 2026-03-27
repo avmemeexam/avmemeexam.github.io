@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AVMeme Exam</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         :root {
             --primary: #bbe1ee;
@@ -16,47 +18,78 @@
             --text-sub: #666666;
         }
 
-        body {
+        /* --- SCROLL SNAP & SLIDE LAYOUT --- */
+        html, body {
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
             background-color: var(--bg);
             color: var(--text-main);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            /* Change overflow from hidden to auto */
-            overflow-y: auto; 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            /* Use min-height instead of height to allow the page to grow */
-            min-height: 100vh;
             user-select: none;
         }
 
+        .slide {
+            width: 100%;
+            min-height: 100vh; 
+            height: auto;        
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 20px;
+            padding-bottom: 60px;
+            position: relative;
+            overflow: visible;
+            box-sizing: border-box; 
+        }
+
+        /* --- SLIDE 1: HEADER & WHEEL --- */
         header {
             text-align: center;
             z-index: 10;
-            margin-top: 20px;
-            margin-bottom: 80px; /* Force space between text and wheel */
+            margin-bottom: 10px;
             pointer-events: none;
-            height: auto;
+            flex-shrink: 0;
+            width: 95%;
         }
 
         .logo {
-            width: 66%;
+            width: 80%;
+            max-width: 800px;
             height: auto;
             display: block;
-            /* Reduce the 25px bottom margin to something smaller like 5px or 10px */
-            margin: 0 auto 8px auto; 
+            margin: 0 auto 5px auto; 
             filter: drop-shadow(0 0 5px rgba(0,0,0,0.2)); 
         }
 
-        p.subtitle { color: #888; font-style: italic; margin-top: 0; font-size: 0.9rem; }
+        p.subtitle { color: #888; font-style: italic; margin-top: 0; font-size: 1rem; }
+        
+        /* Make the bell interactive despite header pointer-events: none */
+        .bell-btn {
+            pointer-events: auto;
+            cursor: pointer;
+            font-style: normal;
+            margin-left: 8px;
+            transition: transform 0.2s ease;
+            display: inline-block;
+        }
+        .bell-btn:hover {
+            transform: scale(1.2) rotate(15deg);
+        }
 
         .main-description {
-            color: #444444;
-            font-size: 1.1rem;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #666;
+            font-size: 1.2rem;
             line-height: 1.4;
             max-width: 800px;
-            margin: 15px auto 0 auto;
+            margin: 5px auto 0 auto;
             font-weight: 500;
             text-align: center;
         }
@@ -64,37 +97,40 @@
         /* SCENE (Drag Area) */
         .scene {
             position: relative;
-            width: 100%;
-            /* Change height to auto or a larger value to prevent collision */
+            width: 100%;              
+            max-width: 1800px;        
+            margin: 0 auto 10px auto;
+            height: 150px;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: grab;
             touch-action: none;
-            /* Ensure it stays below the header flow */
-            margin-bottom: 80px; 
+            flex-shrink: 0;
+            margin-bottom: 20px; 
+            overflow: visible; 
+            perspective: 1000px;
         }
         .scene:active { cursor: grabbing; }
 
         .orbit {
             position: absolute;
-            width: 600px;
-            height: 300px;
+            width: 100%;
+            height: 100%;
             transform-style: preserve-3d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .item {
             position: absolute;
-            width: 140px;
-            height: 90px;
+            width: 120px;
+            height: 80px;
             background: #000;
             border: 2px solid var(--secondary);
             box-shadow: 0 0 10px rgba(0,0,0,0.2);
             border-radius: 10px;
-            left: 50%;
-            top: 50%;
-            margin-left: -70px;
-            margin-top: -45px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -102,6 +138,11 @@
             background-size: cover;
             background-position: center;
             color: white; 
+            top: 50%;
+            left: 50%;
+            margin-left: -60px; 
+            margin-top: -40px;  
+            transition: border-color 0.3s, box-shadow 0.3s, opacity 0.3s;
         }
 
         .item.active {
@@ -109,7 +150,6 @@
             box-shadow: 0 0 30px var(--primary);
             opacity: 1;
             z-index: 100;
-            transform: scale(1.3) !important;
         }
 
         .item-label {
@@ -118,7 +158,7 @@
             background: rgba(0,0,0,0.8);
             width: 100%;
             text-align: center;
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             padding: 4px 0;
             color: white;
             white-space: nowrap;
@@ -126,40 +166,34 @@
             text-overflow: ellipsis;
         }
 
-        /* MEME CARD CONTAINER */
+        .nav-cue { position: absolute; top: 50%; font-size: 2rem; color: rgba(0,0,0,0.1); pointer-events: none; z-index: 50; }
+        .nav-cue.left { left: 10px; }
+        .nav-cue.right { right: 10px; }
+
+        /* --- MEME CARD CONTAINER --- */
         .meme-card-container {
-            flex-grow: 1;
-            width: 90%;
-            max-width: 1000px;
+            width: 85%;
+            max-width: 1600px;
             background: var(--card-bg);
             border-top: 5px solid var(--primary);
-            padding: 20px;
+            padding: 25px;
             display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
+            gap: 30px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
-            overflow: hidden;
-            
-            /* Transition for Hiding/Showing */
+            flex-shrink: 0;
+            height: auto; 
             opacity: 1;
             transform: translateY(0);
             transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            margin-bottom: 40px; 
+            box-sizing: border-box;
         }
 
-        /* HIDDEN STATE: When rotating */
         .meme-card-container.hidden {
             opacity: 0;
-            transform: translateY(30px); /* Slides down slightly */
+            transform: translateY(30px);
             pointer-events: none;
-        }
-
-        /* Add this inside your <style> tag */
-            .correct-answer {
-            font-weight: bold;
-            color: var(--primary-dark); /* Or use var(--accent) for more pop */
-            background-color: rgba(187, 225, 238, 0.3); /* Optional: subtle highlight */
-            border-radius: 4px;
         }
 
         .video-column {
@@ -167,224 +201,553 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            max-width: 350px;
-        }
-        
-        /* Update .video-placeholder to ensure the video fits */
-        .video-placeholder video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* Ensures the whole video is visible */
-            background: #000;    /* Black bars for mismatched aspect ratios */
+            max-width: 400px; 
+            min-width: 250px;
         }
 
-        .video-placeholder img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
-        .play-overlay {
-            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-            font-size: 3rem; color: white; text-shadow: 0 0 10px black; cursor: pointer;
-        }
-
-        /* The container for Audio Mode */
-        .audio-mode-container {
-            position: relative;
+        .video-placeholder {
             width: 100%;
-            height: 100%;
+            aspect-ratio: 16/9; 
             background: #000;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* The static image in Audio Mode */
-        .audio-mode-container img.audio-poster {
-            width: 100%;
-            height: calc(100% - 40px); /* Leave space for audio bar */
-            object-fit: contain;
-            opacity: 0.9;
-        }
-
-        /* The Audio Player Bar */
-        .audio-mode-container audio {
-            width: 100%;
-            height: 40px;
-            background: #f1f3f4;
-        }
-
-        /* The Overlay Speaker Icon */
-        .speaker-overlay {
-            position: absolute;
-            top: 45%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80px; 
-            height: 80px;
-            pointer-events: none; /* Let clicks pass through */
-            opacity: 0.8;
-            background: rgba(0,0,0,0.5);
-            border-radius: 50%;
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .speaker-overlay svg {
-            fill: white;
-            width: 40px;
-            height: 40px;
-        }
-
-        
-        .metadata-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-size: 0.8rem;
-            color: var(--text-sub);
-            background: #f8f9fa;
-            padding: 10px;
             border-radius: 8px;
-            border: 1px solid #eee;
+            overflow: hidden;
+        }
+        
+        .video-placeholder video { width: 100%; height: 100%; object-fit: contain; }
+        
+        .audio-mode-container {
+            position: relative; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+        }
+        .audio-mode-container img.audio-poster {
+            width: 100%; height: calc(100% - 40px); object-fit: contain; opacity: 0.9;
+        }
+        .audio-mode-container audio { width: 100%; height: 40px; background: #f1f3f4; }
+        .speaker-overlay {
+            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
+            width: 60px; height: 60px; pointer-events: none; opacity: 0.8;
+            background: rgba(0,0,0,0.5); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .speaker-overlay svg { fill: white; width: 30px; height: 30px; }
+
+        .metadata-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
+            font-size: 0.85rem; color: var(--text-sub);
+            background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #eee;
         }
         .meta-item strong { color: #222; display: block; }
         .meta-full { grid-column: span 2; }
 
+        /* --- INFO PANEL --- */
         .info-panel {
             flex: 1.5;
             display: flex;
             flex-direction: column;
-            overflow-y: auto;
-            padding-right: 10px;
+            height: auto; 
+            padding-right: 0;
+            min-width: 0; 
         }
-
-        .info-panel::-webkit-scrollbar { width: 8px; }
-        .info-panel::-webkit-scrollbar-track { background: #f1f1f1; }
-        .info-panel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-        .info-panel::-webkit-scrollbar-thumb:hover { background: #bbb; }
 
         .header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+            border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; margin-bottom: 8px;
+            flex-wrap: wrap; 
         }
-        
-        h2 { margin: 0; font-size: 1.5rem; color: #111; }
-        .year-tag { font-family: monospace; color: #999; font-size: 1.2rem; font-weight: bold; }
+        h2 { margin: 0; font-size: 1.5rem; color: #111; word-break: break-word;}
+        .year-tag { font-family: monospace; color: #999; font-size: 1rem; font-weight: bold; }
 
-        .tags-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+        .tags-row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+        .badge { padding: 3px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
         .badge.cat { background: var(--primary); color: #004455; }
         .badge.emo { background: #e0e0e0; color: #555; border: 1px solid #ccc; }
-        .badge.sens { background: var(--accent); color: white; }
 
         .description-text {
-            font-size: 0.95rem; color: #444; margin-bottom: 15px; line-height: 1.5;
-            background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #eee;
+            font-size: 0.95rem; color: #444; margin-bottom: 10px; line-height: 1.5;
+            background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #eee;
         }
-        .description-text strong { color: #000; }
 
         .question-area {
-            background: #f0f7fa; 
-            border-left: 4px solid var(--primary);
-            padding: 15px;
-            border-radius: 0 8px 8px 0;
+            background: #f0f7fa; border-left: 4px solid var(--primary);
+            padding: 15px; border-radius: 0 8px 8px 0;
         }
-        
-        .q-type { color: #666; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-weight: bold; }
-        .q-text { font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; display: block; color: #222; }
+        .q-type { color: #666; font-size: 0.75rem; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        .q-text { font-size: 1.05rem; font-weight: bold; margin-bottom: 10px; display: block; color: #222; }
         
         .choices-list { list-style: none; padding: 0; margin: 0; }
         .choices-list li {
-            padding: 8px 10px;
-            border-bottom: 1px solid #e0e0e0;
-            font-size: 1rem;
-            color: #333;
+            padding: 8px 8px; border-bottom: 1px solid #e0e0e0; font-size: 0.95rem; color: #333;
         }
         .choices-list li:last-child { border-bottom: none; }
-        .choices-list li:hover { background: rgba(0,0,0,0.03); }
         .choices-list li span.opt-letter { color: #0077aa; font-weight: bold; margin-right: 8px; }
+        .correct-answer {
+            font-weight: bold; color: #1e81b0;
+            background-color: rgba(187, 225, 238, 0.3); border-radius: 4px;
+        }
 
-        .nav-cue { position: absolute; top: 50%; font-size: 2rem; color: rgba(0,0,0,0.1); pointer-events: none; }
-        .nav-cue.left { left: 20px; }
-        .nav-cue.right { right: 20px; }
+        /* --- STATS & PERF CONTAINER (SHARED) --- */
+        .stats-container {
+            width: 85%;
+            max-width: 1600px;
+            background: var(--card-bg);
+            border-top: 5px solid var(--primary); 
+            padding: 40px;
+            padding-bottom: 80px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
 
+        .stats-title {
+            color: #666666;
+            margin-bottom: 10px;
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .stats-subtitle {
+            color: #666666;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 40px;
+            max-width: 800px;
+            line-height: 1.5;
+        }
+
+        .stats-footer-heading {
+            font-size: 1.2rem;
+            font-weight: 300;
+            font-style: italic;
+            color: #666666;
+            text-align: center;
+            margin-top: 60px;
+            margin-bottom: 10px;
+            width: 100%;
+            padding: 0 10px;
+        }
+
+        /* Chart Layouts */
+        .charts-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            gap: 30px;
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            min-width: 250px;
+            max-width: 320px;
+            height: 320px; 
+            position: relative;
+        }
+        
+        .charts-column {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            gap: 50px;
+        }
+
+        .chart-wrapper.full-width {
+            flex: none;
+            width: 100%;
+            max-width: 100%;
+            height: 400px;
+        }
+
+        .chart-wrapper h3 {
+            text-align: center; color: var(--secondary); margin-bottom: 10px;
+        }
+
+        /* --- FOOTER / SLIDE 4 STYLES --- */
+        .paper-links-row {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 50px;
+            flex-wrap: wrap;
+        }
+
+        .paper-btn {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 25px;
+            background: #fff;
+            border: 0px solid #ccc;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .paper-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+
+        .paper-btn img {
+            height: 35px;
+            width: auto;
+        }
+
+        .author-section {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .author-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px 20px;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .author-name {
+            font-size: 1.1rem;
+            color: #444;
+            white-space: nowrap;
+        }
+
+        .school-banner-container {
+            width: 100%;
+            padding-top: 10px;
+            text-align: center;
+        }
+        
+        .school-banner {
+            width: 100%;
+            height: auto;
+            max-width: 800px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .scroll-indicator {
+            position: absolute; bottom: 20px; left: 50%;
+            transform: translateX(-50%); opacity: 0.5;
+            cursor: pointer; animation: bounce 2s infinite;
+            font-size: 2rem; color: #aaa;
+            z-index: 50;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+            40% {transform: translateX(-50%) translateY(-10px);}
+            60% {transform: translateX(-50%) translateY(-5px);}
+        }
+
+        /* --- MODAL STYLES --- */
+        .modal {
+            position: fixed; 
+            z-index: 2000;
+            left: 0; 
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.6); 
+            backdrop-filter: blur(3px);
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            opacity: 0; 
+            pointer-events: none; 
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.show { 
+            opacity: 1; 
+            pointer-events: auto; 
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-left: 5px solid var(--primary);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close-modal:hover,
+        .close-modal:focus {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* --- AUTHOR STYLES --- */
+        .author-link {
+            font-size: 1.15rem;
+            color: #333;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: color 0.2s;
+            position: relative;
+        }
+
+        .author-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        .sup-icon {
+            width: 22px;        
+            height: auto;
+            vertical-align: super;
+            margin-left: 2px;
+            opacity: 0.8;
+            border: none;
+        }
+
+
+        #transExpandBtn:hover {
+            fill: var(--accent) !important;
+            transform: scale(1.1);
+            transition: transform 0.2s;
+        }
+
+        /* --- MOBILE RESPONSIBILITY --- */
+        @media (max-width: 768px) {
+            .slide { 
+                height: auto; 
+                min-height: 100vh; 
+                padding: 15px 10px 80px 10px; 
+            }
+            
+            /* Logo & Text scaling */
+            .logo { width: 95%; margin-bottom: 10px; }
+            .main-description { font-size: 1rem; }
+
+            /* Wheel adjustments */
+            .scene { height: 120px; width: 100%; overflow: hidden; } 
+            
+            /* Card stacking */
+            .meme-card-container { 
+                flex-direction: column; 
+                width: 95%; 
+                padding: 15px;
+                gap: 20px;
+            }
+            .video-column { max-width: 100%; }
+            .info-panel { padding-left: 0; }
+            .header-row { flex-direction: column; align-items: flex-start; gap: 5px; }
+
+            /* Stats & Charts - Optimized for One Column per Row */
+            .stats-container { width: 95%; padding: 25px 15px; }
+            .stats-title { font-size: 1.5rem; }
+            .stats-subtitle { font-size: 0.9rem; margin-bottom: 25px; }
+            
+            /* Slide 2 Specific: Stack charts vertically */
+            .charts-row { 
+                display: flex;
+                flex-direction: column; 
+                align-items: center; 
+                gap: 50px; /* Space between the pie charts */
+                width: 100%;
+            }
+
+            .chart-wrapper { 
+                width: 100%; 
+                max-width: 350px; /* Restrict max width so pies don't look stretched */
+                height: 300px;    /* Height to fit the pie and legend */
+                flex: none;       /* Disable flex resizing behavior */
+                margin: 0 auto;   /* Center align */
+            }
+
+            /* Slide 3 Bar Charts */
+            .chart-wrapper.full-width { height: 350px; }
+
+            /* Footer buttons */
+            .paper-links-row { flex-direction: column; gap: 15px; width: 100%; }
+            .paper-btn { width: 100%; justify-content: center; box-sizing: border-box; }
+            
+            .author-grid { gap: 10px 15px; }
+            .author-link { font-size: 1rem; }
+        }
     </style>
 </head>
 <body>
-    <header>
-        <img src="../image/logo.png" alt="AVMeme Exam Logo" class="logo">
-        <p class="main-description">
-            A Multimodal Multilingual Multicultural Benchmark for<br>
-            LLMs' Contextual and Cultural Knowledge and Thinking
-        </p>
-        <p class="presenter-line">Presented by AVMeme Team</p>
-    </header>
 
-    <div class="scene" id="scene">
-        <div class="orbit" id="orbit"></div>
-        <div class="nav-cue left">❮</div>
-        <div class="nav-cue right">❯</div>
-    </div>
+    <section class="slide" id="slide1">
+        <header>
+            <img src="../image/logo.png" alt="AVMeme Exam Logo" class="logo">
+            <p class="main-description">
+                A Multimodal Multilingual Multicultural Benchmark for<br>
+                LLMs' Contextual and Cultural Knowledge and Thinking
+            </p>
+        </header>
 
-    <div class="meme-card-container hidden" id="cardContainer">
-        
-        <div class="video-column">
-            <div class="video-placeholder">
-                <video id="cardVideo" controls playsinline style="display:block;">
-                    Your browser does not support the video tag.
-                </video>
+        <div class="scene" id="scene">
+            <div class="orbit" id="orbit"></div>
+            <div class="nav-cue left">❮</div>
+            <div class="nav-cue right">❯</div>
+        </div>
+
+        <div class="meme-card-container hidden" id="cardContainer">
             
-                <div id="cardAudioContainer" class="audio-mode-container" style="display:none;">
-                    <img id="cardAudioPoster" class="audio-poster" src="" alt="Audio Preview">
-                    
-                    <div class="speaker-overlay">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                        </svg>
+            <div class="video-column">
+                <div class="video-placeholder">
+                    <video id="cardVideo" controls playsinline style="display:block;">
+                        <img src="" alt="Video Placeholder">
+                    </video>
+                
+                    <div id="cardAudioContainer" class="audio-mode-container" style="display:none;">
+                        <img id="cardAudioPoster" class="audio-poster" src="" alt="Audio Preview">
+                        <div class="speaker-overlay">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                            </svg>
+                        </div>
+                        <audio id="cardAudioPlayer" controls></audio>
                     </div>
-            
-                    <audio id="cardAudioPlayer" controls></audio>
+                </div>
+                
+                <div class="metadata-grid">
+                    <div class="meta-item"><strong>Language</strong><span id="metaLang">en</span></div>
+                    <div class="meta-item"><strong>Sensitivity</strong><span id="metaSens">None</span></div>
+                    <div class="meta-item meta-full">
+                        <strong>Transcript</strong>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <span id="metaTrans" style="font-style: italic; color: #666;">N/A</span>
+                            <svg id="transExpandBtn" style="display: none; width: 16px; height: 16px; cursor: pointer; fill: var(--primary-dark); flex-shrink: 0;" viewBox="0 0 24 24" title="View Full Transcript">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="metadata-grid">
-                <div class="meta-item"><strong>Language</strong><span id="metaLang">en</span></div>
-                <div class="meta-item"><strong>Sensitivity</strong><span id="metaSens">None</span></div>
-                <div class="meta-item meta-full"><strong>Transcript</strong><span id="metaTrans" style="font-style: italic; color: #666;">N/A</span></div>
+
+            <div class="info-panel">
+                <div class="header-row">
+                    <h2 id="cardTitle">Title</h2>
+                    <span class="year-tag" id="cardYear">2020</span>
+                </div>
+
+                <div class="tags-row">
+                    <span id="cardCategory" class="badge cat">Category</span>
+                    <span id="cardEmotion" class="badge emo">Emotion</span>
+                </div>
+
+                <div class="description-text">
+                    <strong>Summary:</strong> <span id="cardSummary">...</span><br>
+                    <strong>Usage:</strong> <span id="cardUsage">...</span>
+                </div>
+
+                <div class="question-area">
+                    <div class="q-type" id="cardQType">Question Type</div>
+                    <span class="q-text" id="cardQuestion">Question goes here?</span>
+                    <ul class="choices-list" id="cardOptions">
+                    </ul>
+                </div>
             </div>
         </div>
 
-        <div class="info-panel">
-            <div class="header-row">
-                <h2 id="cardTitle">Title</h2>
-                <span class="year-tag" id="cardYear">2020</span>
-            </div>
+        <div class="scroll-indicator" onclick="document.getElementById('slide2').scrollIntoView()">
+            ▼
+        </div>
+    </section>
 
-            <div class="tags-row">
-                <span id="cardCategory" class="badge cat">Category</span>
-                <span id="cardEmotion" class="badge emo">Emotion</span>
-            </div>
+    <section class="slide" id="slide2">
+        <div class="stats-container">
+            <h2 class="stats-title">Testing LLMs Content, Context & Cultural Understanding</h2>
+            <p class="stats-subtitle">
+                Covering well-known, multilingual Internet speeches, songs, music, and sound effects.
+            </p>
+            <div class="charts-row">
+                <div class="chart-wrapper">
+                    <h3>Question Types</h3>
+                    <canvas id="chartQuestionTypes"></canvas>
+                </div>
 
-            <div class="description-text">
-                <strong>Summary:</strong> <span id="cardSummary">...</span><br>
-                <strong>Usage:</strong> <span id="cardUsage">...</span>
-            </div>
+                <div class="chart-wrapper">
+                    <h3>Sound Categories</h3>
+                    <canvas id="chartSoundCategories"></canvas>
+                </div>
 
-            <div class="question-area">
-                <div class="q-type" id="cardQType">Question Type</div>
-                <span class="q-text" id="cardQuestion">Question goes here?</span>
-                <ul class="choices-list" id="cardOptions">
-                </ul>
+                <div class="chart-wrapper">
+                    <h3>Languages</h3>
+                    <canvas id="chartLanguages"></canvas>
+                </div>
             </div>
+            <div class="stats-footer-heading">
+                We are interested in whether multimodal LLMs can perceive beyond the media's content, including its<br> context, how people feel and use it, and where it situates in our shared cultural world.
+            </div>
+        </div>
+        
+        <div class="scroll-indicator" onclick="document.getElementById('slide3').scrollIntoView()">
+            ▼
+        </div>
+    </section>
+
+    <section class="slide" id="slide3">
+        <div class="stats-container">
+            <h2 class="stats-title">Excel at Language, but Struggle with Context, Humor, and Usage</h2>
+            <p class="stats-subtitle">
+                All models except Gemini 3 lack Multimedia World Knowledge.
+            </p>
+            
+            <div class="charts-column">
+                <div class="chart-wrapper full-width">
+                    <h3>Performance by Question Type</h3>
+                    <canvas id="chartModelQTypes"></canvas>
+                </div>
+
+                <div class="chart-wrapper full-width">
+                    <h3>Performance by Sound Category</h3>
+                    <canvas id="chartModelSoundCats"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="transcriptionModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3 style="margin-top: 0; color: var(--secondary);">Full Transcription</h3>
+            <p id="fullTranscriptionText" style="line-height: 1.6; color: #333; white-space: pre-wrap;"></p>
         </div>
     </div>
 
-
     <script>
-        // --- DATA FROM PAPER (APPENDIX D) ---
+        // --- 1. MEME DATA ---
         const memes = [
-            { 
+        { 
                 id: 1, 
                 title: "Never Gonna Give You Up", 
                 year: "1987", 
@@ -802,13 +1165,246 @@
                 correct: "B", 
                 src: "https://placehold.co/400x300/FF6699/FFF?text=AiScReam", 
                 video: "../videos/Dc7gc7BECk0_0.0_31.0.mp4" 
+            },
+            { 
+                id: 19, 
+                title: "That Escalated Quickly", 
+                year: "2004", 
+                category: "Clean Speech", 
+                emotion: "surprised/shocked, sarcastic/ironic", 
+                lang: "English",
+                sensitivity: "None",
+                transcription: "Boy, that escalated quickly",
+                summary: "A man reacts to a suddenly intense situation with ironic understatement.",
+                usage: "Used to humorously comment on a situation that suddenly becomes far more intense or chaotic than expected.", 
+                qType: "Contextual Inference", 
+                question: "What kind of humorous device is the speaker using?", 
+                options: [
+                    "A. Pun.",
+                    "B. Understatement.",
+                    "C. Hyperbole.",
+                    "D. Slapstick."
+                ], 
+                correct: "B",
+                src: "https://placehold.co/400x300/444444/FFF?text=Escalated+Quickly",
+                video: "../videos/rFeVfwDvTyM_0.0_5.0.mp4"
+            },
+            { 
+                id: 20, 
+                title: "Crazy Frog", 
+                year: "2005", 
+                category: "Song", 
+                emotion: "happy, nostalgic", 
+                lang: "N/A",
+                sensitivity: "None",
+                transcription: "N/A",
+                summary: "A hyperactive techno remix featuring synthesized moped-like vocals and an animated frog, based on the melody of “Axel F”.",
+                usage: "Used to inject absurd excitement, retro childhood nostalgia, or frantic comedic energy.", 
+                qType: "World Knowledge", 
+                question: "Which original composition is this remix based on?", 
+                options: [
+                    "A. Blue.",
+                    "B. Sandstorm.",
+                    "C. Popcorn.",
+                    "D. Zombie Nation.",
+                    "E. Axel F."
+                ], 
+                correct: "E",
+                src: "https://placehold.co/400x300/33AAFF/FFF?text=Crazy+Frog",
+                video: "../videos/k85mRPqvMbE_6.0_34.0.mp4"
+            },
+            { 
+                id: 21, 
+                title: "Epic Sax Guy", 
+                year: "2010", 
+                category: "Music", 
+                emotion: "happy, nostalgic", 
+                lang: "N/A",
+                sensitivity: "None",
+                transcription: "N/A",
+                summary: "A charismatic saxophone solo from Eurovision 2010 that was widely looped and remixed into a popular instrumental meme.",
+                usage: "Used to add exaggerated confidence, showmanship, or playful, upbeat energy to a situation.", 
+                qType: "Usage & Application", 
+                question: "Which everyday situation would this sax riff most comically exaggerate?", 
+                options: [
+                    "A. Waiting in line at the DMV.",
+                    "B. Dramatic courtroom testimony.",
+                    "C. Walking down a fashion runway.",
+                    "D. A quiet library study session."
+                ], 
+                correct: "C",
+                src: "https://placehold.co/400x300/FFD700/000?text=Epic+Sax",
+                video: "../videos/pHXDMe6QV-U_47.0_62.0.mp4"
+            },
+            { 
+                id: 22, 
+                title: "Tareekh Pe Tareekh", 
+                year: "1993", 
+                category: "Noisy Speech", 
+                emotion: "angry/annoyed", 
+                lang: "Hindi",
+                sensitivity: "None",
+                transcription: "तारीख़ पे तारीख़, तारीख़ पे तारीख़, तारीख़ पे तारीख़ मिलती जा रही है, जज साहब! लेकिन [अस्पष्ट] इंसाफ़ नहीं मिला। ऑर्डर! ऑर्डर! [अस्पष्ट] से चढ़ गया तेरा ऑर्डर! [अस्पष्ट] तेरा [अस्पष्ट] तेरा ऑर्डर! [अस्पष्ट] अदालत की [अस्पष्ट]!",
+                summary: "A man angrily repeats the word “tareekh” to complain about endlessly postponed decisions.",
+                usage: "Used to vent frustration when deadlines, decisions, or outcomes keep getting delayed.", 
+                qType: "Language Analysis", 
+                question: "What is the man angry about?", 
+                options: [
+                    "A. Weather updates.",
+                    "B. Shopping discounts.",
+                    "C. Late results.",
+                    "D. Endless delays.",
+                    "E. Failed exams."
+                ], 
+                correct: "D",
+                src: "https://placehold.co/400x300/662222/FFF?text=Tareekh",
+                video: "../videos/wtr8qu50LiE_8.0_33.0.mp4"
+            },
+            { 
+                id: 23, 
+                title: "Mood - iann dior (Heaven Edit)", 
+                year: "2022", 
+                category: "Music", 
+                emotion: "sarcastic/ironic, cringe/embarrassed", 
+                lang: "N/A",
+                sensitivity: "None",
+                transcription: "N/A",
+                summary: "A failed cannon-loading scene abruptly cuts to upbeat guitar music paired with a visual of heaven, creating ironic contrast.",
+                usage: "Used to create dark humor by contrasting a tragic or embarrassing moment with cheerful, uplifting music.", 
+                qType: "Contextual Inference", 
+                question: "Why is background music used in this video?", 
+                options: [
+                    "A. To promote the music.",
+                    "B. To create a funny contrast between tragedy and positivity.",
+                    "C. To match the scene with trending sounds.",
+                    "D. Because the original audio was lost."
+                ], 
+                correct: "B",
+                src: "https://placehold.co/400x300/99CCFF/000?text=Heaven+Edit",
+                video: "../videos/gtFduCGaGdo_0.0_9.0.mp4"
+            },
+            { 
+                id: 24, 
+                title: "紫禁之巔令人窒息的舞蹈", 
+                year: "2004", 
+                category: "Noisy Speech", 
+                emotion: "surprised/shocked", 
+                lang: "Chinese",
+                sensitivity: "None",
+                transcription: "我終於看到小影所說的致命武器，他舞蹈中的變化，根本不是在跳舞！好像是被神靈上身，整個人都融在舞蹈裡面。那股力量幾乎令人窒息。",
+                summary: "A narrator dramatically describes an ordinary dance as if it were a divine, overwhelming experience.",
+                usage: "Used humorously to exaggerate ordinary or awkward actions as if they were epic, world-shaking events.", 
+                qType: "Humor & Popularity", 
+                question: "What is funny about this clip?", 
+                options: [
+                    "A. The narrator dramatically overhypes an ordinary dance.",
+                    "B. The narrator misreads the dancer's name several times.",
+                    "C. The audience claps completely off-beat.",
+                    "D. The camera zooms in and out as if testing a new feature."
+                ], 
+                correct: "A",
+                src: "https://placehold.co/400x300/663366/FFF?text=Overhyped+Dance",
+                video: "../videos/2hWvmcmo-MA_60.0_74.0.mp4"
+            },
+            { 
+                id: 25, 
+                title: "Loituma Girl / Leekspin / Ievan Polkka", 
+                year: "2006", 
+                category: "Song", 
+                emotion: "happy", 
+                lang: "Finnish",
+                sensitivity: "None",
+                transcription: "Ratsatsaa ja ripidabi dilla, Beritstan dillan dellan doo, A baribbattaa baribbariiba, Ribiribi distan dellan doo, Ja barillas dillan deia dooa, Daba daba daba daba daba duvja vuu.",
+                summary: "A Finnish folk song that went viral after being paired with a looping animation of an anime character spinning a leek, later evolving into the iconic Loituma Girl meme.",
+                usage: "Used in cheerful edits, dance covers, fan remixes, and looping animation memes.", 
+                qType: "World Knowledge", 
+                question: "Who provided the voice for the first ACG character associated with this song?", 
+                options: [
+                    "A. Rina Satō.",
+                    "B. Yuki Matsuoka.",
+                    "C. Fumiko Orikasa.",
+                    "D. Saki Fujita."
+                ], 
+                correct: "B",
+                src: "https://placehold.co/400x300/66CC66/000?text=Leekspin",
+                video: "../videos/LrwyvHU66Hg_15.0_30.0.mp4"
+            },
+            { 
+                id: 26, 
+                title: "Don Ko Pakadna Namumkin Hai", 
+                year: "2006", 
+                category: "Noisy Speech", 
+                emotion: "sarcastic/ironic", 
+                lang: "Hindi",
+                sensitivity: "None",
+                transcription: "डॉन को पकड़ना मुश्किल ही नहीं, नामुमकिन है",
+                summary: "A confident declaration stating that capturing “Don” is not just difficult, but impossible, delivered in an iconic, self-assured tone.",
+                usage: "Used humorously or sarcastically to describe someone who is unbeatable, elusive, or impossible to deal with.", 
+                qType: "Emotion Analysis", 
+                question: "What intent does the speaker's tone most strongly convey?", 
+                options: [
+                    "A. Expressing sadness over loss.",
+                    "B. Bold self-praise about being unbeatable.",
+                    "C. Humble acceptance of defeat.",
+                    "D. Pleading for forgiveness."
+                ], 
+                correct: "B",
+                src: "https://placehold.co/400x300/331111/FFF?text=Pakadna+Namumkin",
+                video: "../videos/assQ0ZdgHew_15.0_20.0.mp4"
+            },
+            { 
+                id: 27, 
+                title: "اه اه اه، چندش!", 
+                year: "2018", 
+                category: "Clean Speech", 
+                emotion: "angry/annoyed", 
+                lang: "Persian",
+                sensitivity: "None",
+                transcription: "اه اه اه، چندش!",
+                summary: "A man reacts with strong disgust, repeatedly exclaiming that something is gross.",
+                usage: "Used to express disgust or revulsion toward an unpleasant or unhygienic action.", 
+                qType: "Usage & Application", 
+                question: "In which situation would this reaction most appropriately be used?", 
+                options: [
+                    "A. Seeing someone picking their nose.",
+                    "B. Talking about killing cockroaches.",
+                    "C. Explaining how babies are born."
+                ], 
+                correct: "A",
+                src: "https://placehold.co/400x300/774444/FFF?text=Ugh+Disgust",
+                video: "../videos/C6a4GGQgvQQ_0_4.mp4"
+            },
+            { 
+                id: 28, 
+                title: "俄罗斯群架 / 华夏第一剑", 
+                year: "2013", 
+                category: "Noisy Speech", 
+                emotion: "angry/annoyed", 
+                lang: "Russian",
+                sensitivity: "violence/gore",
+                transcription: "Сила и честь! Победа или смерть!",
+                summary: "A Russian-language chant from a fight video that Chinese viewers humorously reinterpret as Mandarin phrases through soramimi.",
+                usage: "Used as an example of phonetic mishearing, where foreign speech is reinterpreted as humorous native-language phrases.", 
+                qType: "Audio Analysis", 
+                question: "If you are a Chinese listener, what phrase does this clip most resemble?", 
+                options: [
+                    "A. 御剑跟着我.",
+                    "B. 保卫宇宙.",
+                    "C. 我到河北省来.",
+                    "D. 华夏第一剑."
+                ], 
+                correct: "D",
+                src: "https://placehold.co/400x300/553333/FFF?text=Russian+Misheard",
+                video: "../videos/av7873245_2.5_10.5.wav",
             }
-
         ];
-    
-        // --- 3D ENGINE ---
-        const radiusX = 450;
-        const radiusZ = 200;
+
+        // --- 2. 3D WHEEL & CARD LOGIC ---
+        // DYNAMIC RADIUS CALCULATION
+        const isMobile = window.innerWidth < 768;
+        const radiusX = isMobile ? 140 : 450;
+        const radiusZ = isMobile ? 90 : 200;
+        
         const itemAngleStep = 360 / memes.length;
         
         let currentAngle = 90; 
@@ -822,13 +1418,22 @@
         const scene = document.getElementById('scene');
         const cardContainer = document.getElementById('cardContainer');
     
-        function init() {
+        // Fisher-Yates Shuffle Algorithm
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function initWheel() {
+            shuffleArray(memes);
+
             memes.forEach((meme, index) => {
                 const el = document.createElement('div');
                 el.className = 'item';
                 el.style.backgroundImage = `url('${meme.src}')`;
                 el.innerHTML = `<div class="item-label">${meme.title}</div>`;
-                // Store index so we can easily find it later
                 el.dataset.index = index;
                 const initialTheta = index * itemAngleStep;
                 el.dataset.baseTheta = initialTheta; 
@@ -837,54 +1442,35 @@
     
             orbit.style.transform = "rotateX(-10deg)";
             
-            // Setup Drag Events
             setupEvents();
     
             // Spin Logic
             const randomIndex = Math.floor(Math.random() * memes.length);
-            const targetTheta = randomIndex * itemAngleStep;
-            
-            // We want to land such that targetTheta + currentAngle = 90 (front)
-            // But currentAngle starts at 90. 
-            // Logic: active item is one near 90deg.
-            // Let's just spin a few times and land near 0 relative offset
             const stopAngle = 90 - (randomIndex * itemAngleStep) - (360 * 3);
-            
             animateSpin(currentAngle, stopAngle, 2500); 
         }
     
         function setupEvents() {
-            // Mouse Events
             scene.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                isSpinning = false; // Stop auto-spin on interaction
-                startX = e.clientX;
-                lastX = e.clientX;
-                cardContainer.classList.add('hidden'); // Hide card while dragging
+                isDragging = true; isSpinning = false;
+                startX = e.clientX; lastX = e.clientX;
+                cardContainer.classList.add('hidden');
             });
-    
             window.addEventListener('mousemove', (e) => {
                 if (!isDragging) return;
                 const delta = e.clientX - lastX;
                 lastX = e.clientX;
-                velocity = delta * 0.3; // Sensitivity
+                velocity = delta * 0.3;
                 currentAngle += velocity;
                 updateRender();
             });
+            window.addEventListener('mouseup', () => { isDragging = false; });
     
-            window.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
-    
-            // Touch Events
             scene.addEventListener('touchstart', (e) => {
-                isDragging = true;
-                isSpinning = false;
-                startX = e.touches[0].clientX;
-                lastX = e.touches[0].clientX;
+                isDragging = true; isSpinning = false;
+                startX = e.touches[0].clientX; lastX = e.touches[0].clientX;
                 cardContainer.classList.add('hidden');
             }, {passive: false});
-    
             window.addEventListener('touchmove', (e) => {
                 if (!isDragging) return;
                 const clientX = e.touches[0].clientX;
@@ -894,10 +1480,7 @@
                 currentAngle += velocity;
                 updateRender();
             }, {passive: false});
-    
-            window.addEventListener('touchend', () => {
-                isDragging = false;
-            });
+            window.addEventListener('touchend', () => { isDragging = false; });
         }
     
         function animateSpin(start, end, duration) {
@@ -906,18 +1489,12 @@
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                // Ease Out Cubic
                 const ease = 1 - Math.pow(1 - progress, 3);
                 currentAngle = start + (end - start) * ease;
-                
                 updateRender(); 
-                
-                if (progress < 1) {
-                    requestAnimationFrame(step);
-                } else {
-                    isSpinning = false;
-                    currentAngle = end; 
-                    // Ensure we are perfectly snapped
+                if (progress < 1) requestAnimationFrame(step);
+                else {
+                    isSpinning = false; currentAngle = end; 
                     loop();
                     cardContainer.classList.remove('hidden');
                 }
@@ -927,26 +1504,15 @@
     
         function loop() {
             if (!isSpinning && !isDragging) {
-                velocity *= 0.95; // Friction
+                velocity *= 0.95; 
                 currentAngle += velocity;
-                
-                if (Math.abs(velocity) > 0.1) {
-                    cardContainer.classList.add('hidden');
-                } else {
-                    // Snap to nearest item
-                    // We want an item (baseTheta + currentAngle) % 360 == 90
-                    // So currentAngle should result in (90 - baseTheta)
-                    // The itemAngleStep grid is predictable.
-                    
+                if (Math.abs(velocity) > 0.1) cardContainer.classList.add('hidden');
+                else {
                     const relativeAngle = currentAngle - 90;
                     const snapTarget = Math.round(relativeAngle / itemAngleStep) * itemAngleStep + 90;
-                    
-                    // Smooth snap
                     currentAngle += (snapTarget - currentAngle) * 0.1;
-    
                     if(Math.abs(snapTarget - currentAngle) < 0.05) {
                         currentAngle = snapTarget;
-                        // Reveal Card if stopped
                         cardContainer.classList.remove('hidden');
                     }
                 }
@@ -961,28 +1527,19 @@
                 const baseTheta = parseFloat(item.dataset.baseTheta);
                 const theta = baseTheta + currentAngle;
                 const rad = theta * (Math.PI / 180);
-                
-                // Calculate 3D position
                 const x = radiusX * Math.cos(rad);
                 const z = radiusZ * Math.sin(rad);
-                
-                // Scale and Opacity based on Z-depth
-                // z ranges from -radiusZ to +radiusZ
                 const scale = 0.6 + (0.4 * (z + radiusZ) / (2 * radiusZ));
                 const opacity = 0.4 + (0.6 * (z + radiusZ) / (2 * radiusZ));
-    
                 item.style.transform = `translate3d(${x}px, 0, ${z}px) scale(${scale})`;
                 item.style.zIndex = Math.floor(z + radiusZ);
                 item.style.opacity = opacity;
     
-                // Normalize angle to check who is at the "front" (90 degrees)
                 let normTheta = theta % 360;
                 if(normTheta < 0) normTheta += 360;
-                
-                // If item is roughly at 90 degrees (+/- 10)
                 if (normTheta > 80 && normTheta < 100) {
                     if (!item.classList.contains('active')) {
-                        items.forEach(i => i.classList.remove('active')); // clear others
+                        items.forEach(i => i.classList.remove('active')); 
                         item.classList.add('active');
                         updateCard(index);
                     }
@@ -995,8 +1552,6 @@
         function updateCard(index) {
             const data = memes[index];
             if (!data) return;
-            
-            // Text updates
             document.getElementById('cardTitle').innerText = data.title;
             document.getElementById('cardYear').innerText = data.year;
             document.getElementById('cardCategory').innerText = data.category;
@@ -1006,73 +1561,310 @@
             document.getElementById('cardQType').innerText = data.qType;
             document.getElementById('cardQuestion').innerText = data.question;
 
-            // --- MEDIA LOGIC UPDATE ---
             const videoEl = document.getElementById('cardVideo');
             const audioContainer = document.getElementById('cardAudioContainer');
             const audioPlayer = document.getElementById('cardAudioPlayer');
             const audioPoster = document.getElementById('cardAudioPoster');
 
-            // Reset everything first
-            videoEl.pause();
-            audioPlayer.pause();
-            videoEl.currentTime = 0;
-            audioPlayer.currentTime = 0;
+            videoEl.pause(); audioPlayer.pause();
+            videoEl.currentTime = 0; audioPlayer.currentTime = 0;
 
             const mediaPath = data.video || "";
-            // Check if it is a WAV file (Audio Mode)
             const isAudio = mediaPath.toLowerCase().endsWith('.wav');
 
             if (isAudio) {
-                // --- AUDIO MODE ---
-                videoEl.style.display = 'none';           // Hide Video Tag
-                audioContainer.style.display = 'flex';    // Show Audio Container
-                
-                // Set the Audio Source
+                videoEl.style.display = 'none';
+                audioContainer.style.display = 'flex';
                 audioPlayer.src = mediaPath;
-                
-                // Set the Static Image (Use the meme image, or your custom speaker icon)
-                // Currently using data.src (Meme Image) + the Overlay Icon defined in HTML
                 let posterSrc = data.src;
-                if (posterSrc.includes('placehold.co') && posterSrc.includes('?text=')) {
-                    posterSrc += '%0A(audio-only)';
-                }
+                if (posterSrc.includes('placehold.co')) posterSrc += '%0A(audio-only)';
                 audioPoster.src = posterSrc;
-                
             } else {
-                // --- VIDEO MODE ---
-                audioContainer.style.display = 'none';    // Hide Audio Container
-                videoEl.style.display = 'block';          // Show Video Tag
-                
+                audioContainer.style.display = 'none';
+                videoEl.style.display = 'block';
                 videoEl.poster = data.src;
                 videoEl.src = mediaPath;
             }
-            // --------------------------
 
             document.getElementById('metaLang').innerText = ": " + data.lang;
             document.getElementById('metaSens').innerText = ": " + data.sensitivity;
-            document.getElementById('metaTrans').innerText = ": " + (data.transcription.length > 99999999 ? data.transcription.substring(0,50) + "..." : data.transcription);
+            
+            // --- UPDATED TRANSCRIPTION LOGIC ---
+            const transEl = document.getElementById('metaTrans');
+            const expandBtn = document.getElementById('transExpandBtn');
+            const fullText = data.transcription || "N/A";
+            const truncateLimit = 50;
+
+            if (fullText.length > truncateLimit) {
+                transEl.innerText = ": " + fullText.substring(0, truncateLimit) + "...";
+                expandBtn.style.display = 'block';
+                
+                expandBtn.onclick = function() {
+                    openModal(fullText);
+                };
+            } else {
+                transEl.innerText = ": " + fullText;
+                expandBtn.style.display = 'none';
+            }
             
             const ul = document.getElementById('cardOptions');
             ul.innerHTML = '';
-            
             data.options.forEach(opt => {
                 const li = document.createElement('li');
                 const letter = opt.split('.')[0].trim(); 
                 const text = opt.substring(letter.length + 1);
-                
-                if (data.correct && letter === data.correct) {
-                    li.classList.add('correct-answer');
-                }
-
+                if (data.correct && letter === data.correct) li.classList.add('correct-answer');
                 li.innerHTML = `<span class="opt-letter">${letter}.</span>${text}`;
                 ul.appendChild(li);
             });
         }
-    
-        // --- START ---
-        init();
-    </script>
 
-    
+        // --- 3. CHART LOGIC ---
+        function initCharts() {
+            // -- Common Palette --
+            const veryLightBluePalette7 = [
+                '#A6E1FA', '#BAEAFB', '#CEF0FD', '#DFF6FE', '#EDFBFF', '#F4FDFF', '#FAFEFF'
+            ];
+            const veryLightBluePalette5 = [
+                '#A6E1FA', '#BAEAFB', '#CEF0FD', '#DFF6FE', '#EDFBFF'
+            ];
+            const totalClips = 1032;
+
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(context) {
+                                // Force the raw number to be a float with 1 decimal place
+                                const value = Number(context.raw).toFixed(1); 
+                                
+                                if(context.chart.config.type === 'pie') {
+                                    const count = Math.round(totalClips * (context.raw / 100));
+                                    return ` ${value}% (${count} clips)`;
+                                }
+                                
+                                // This ensures "46" becomes "46.0%"
+                                return ` ${value}%`; 
+                            }
+                        }
+                    }
+                }
+            };
+
+            // Existing Pie Charts
+            new Chart(document.getElementById('chartQuestionTypes'), {
+                type: 'pie',
+                data: {
+                    labels: ['World Knowledge', 'Contextual Inference', 'Usage & Application', 'Humor & Popularity', 'Language Analysis', 'Emotion Analysis', 'Audio Analysis'],
+                    datasets: [{ data: [22.1, 21.7, 18.8, 12.9, 12.0, 7.1, 5.4], backgroundColor: veryLightBluePalette7, borderWidth: 1, borderColor: '#fff' }]
+                },
+                options: commonOptions
+            });
+
+            new Chart(document.getElementById('chartSoundCategories'), {
+                type: 'pie',
+                data: {
+                    labels: ['Noisy Speech', 'Clean Speech', 'Song', 'Music', 'Sound Effect'],
+                    datasets: [{ data: [34.6, 27.2, 16.6, 11.4, 10.2], backgroundColor: veryLightBluePalette5, borderWidth: 1, borderColor: '#fff' }]
+                },
+                options: commonOptions
+            });
+
+            new Chart(document.getElementById('chartLanguages'), {
+                type: 'pie',
+                data: {
+                    labels: ['English', 'Chinese', 'Non-Language', 'Others', 'Japanese', 'Korean', 'Persian'],
+                    datasets: [{ data: [29.0, 24.7, 21.2, 7.7, 7.4, 5.4, 4.7], backgroundColor: veryLightBluePalette7, borderWidth: 1, borderColor: '#fff' }]
+                },
+                options: commonOptions
+            });
+            
+            // --- NEW: BAR CHARTS (Pivot: X-Axis = Models) ---
+            const modelPerfData = {
+                "Qwen2-Audio": { "Language Analysis": 52.0, "Contextual Inference": 41.7, "Humor & Popularity": 46.6, "Usage & Application": 41.8, "World Knowledge": 25.1, "AVG": 41.0, "Speech": 43.5, "Song": 40.8, "Music": 37.3, "Sound Effect": 30.5 },
+                "Audio Flamingo 3": { "Language Analysis": 62.9, "Contextual Inference": 47.8, "Humor & Popularity": 65.8, "Usage & Application": 53.8, "World Knowledge": 28.6, "AVG": 48.7, "Speech": 53.1, "Song": 45.6, "Music": 43.2, "Sound Effect": 33.3 },
+                "GPT-4o Audio": { "Language Analysis": 77.4, "Contextual Inference": 54.9, "Humor & Popularity": 57.1, "Usage & Application": 52.3, "World Knowledge": 48.9, "AVG": 57.1, "Speech": 62.5, "Song": 59.4, "Music": 42.4, "Sound Effect": 37.1 },
+                "Phi-4-Multimodal": { "Language Analysis": 62.1, "Contextual Inference": 48.4, "Humor & Popularity": 48.5, "Usage & Application": 31.4, "World Knowledge": 41.8, "AVG": 45.8, "Speech": 51.0, "Song": 40.4, "Music": 35.0, "Sound Effect": 34.3 },
+                "Qwen3-Omni": { "Language Analysis": 84.6, "Contextual Inference": 61.9, "Humor & Popularity": 64.7, "Usage & Application": 60.3, "World Knowledge": 48.0, "AVG": 62.7, "Speech": 67.4, "Song": 59.1, "Music": 54.7, "Sound Effect": 49.0 },
+                "Gemini 2.5 Flash": { "Language Analysis": 82.3, "Contextual Inference": 69.2, "Humor & Popularity": 78.1, "Usage & Application": 60.6, "World Knowledge": 56.4, "AVG": 66.1, "Speech": 72.4, "Song": 67.8, "Music": 55.7, "Sound Effect": 58.1 },
+                "Gemini 3 Pro": { "Language Analysis": 91.1, "Contextual Inference": 81.1, "Humor & Popularity": 83.5, "Usage & Application": 72.8, "World Knowledge": 83.6, "AVG": 81.9, "Speech": 84.7, "Song": 81.3, "Music": 76.1, "Sound Effect": 72.4 }
+            };
+
+            // Models (X-Axis)
+            const modelNames = Object.keys(modelPerfData);
+            
+            // --- CHART 1: Question Types (Gradient Blue) ---
+            // Palettes: White-Blue -> Light Blue (approx. Material Blue 50 -> 400)
+            const qTypeColors = [
+                '#e1f5fe', // L
+                '#b3e5fc', // C
+                '#81d4fa', // H
+                '#4fc3f7', // U
+                '#29b6f6'  // W
+            ];
+
+            const qTypeMap = {
+                "Language Analysis": "Language Analysis",
+                "Contextual Inference": "Contextual Inference",
+                "Humor & Popularity": "Humor & Popularity",
+                "Usage & Application": "Usage & Application",
+                "World Knowledge": "World Knowledge"
+            };
+            const shortQTypes = Object.keys(qTypeMap);
+
+            // Construct datasets: Each Q-Type is a dataset
+            const datasetsQType = shortQTypes.map((short, index) => {
+                const fullName = qTypeMap[short];
+                const dataPoints = modelNames.map(model => modelPerfData[model][fullName]);
+                return {
+                    label: fullName, // Short label for Legend
+                    fullName: fullName, // Custom prop for tooltip
+                    data: dataPoints,
+                    backgroundColor: qTypeColors[index],
+                    borderColor: '#fff',
+                    borderWidth: 1
+                };
+            });
+
+            new Chart(document.getElementById('chartModelQTypes'), {
+                type: 'bar',
+                data: {
+                    labels: modelNames,
+                    datasets: datasetsQType
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    scales: {
+                        y: { beginAtZero: true, max: 100, title: {display: true, text: 'Accuracy (%)'} },
+                        x: { 
+                            ticks: { 
+                                font: { weight: 'bold', size: 16},
+                                autoSkip: false,
+                                maxRotation: 45,
+                                minRotation: 0
+                            } 
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 16 } } },
+                        // ADD THIS TOOLTIP BLOCK HERE:
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    // This forces 1 decimal place (e.g., 46.0)
+                                    if (context.parsed.y !== null) {
+                                        label += Number(context.parsed.y).toFixed(1) + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // --- CHART 2: Sound Categories (Blue + Grey AVG) ---
+            const soundCategories = ["Speech", "Song", "Music", "Sound Effect", "AVG"];
+            const soundColors = [
+                '#c3e7e3', // Speech
+                '#a6e0d9', // Song
+                '#7fd1c6', // Music
+                '#55c2b4', // SFX
+                '#dcdcdc'  // AVG
+            ];
+
+            const datasetsSound = soundCategories.map((cat, index) => {
+                const dataPoints = modelNames.map(model => modelPerfData[model][cat]);
+                return {
+                    label: cat,
+                    data: dataPoints,
+                    backgroundColor: soundColors[index],
+                    borderColor: '#fff',
+                    borderWidth: 1
+                };
+            });
+
+            new Chart(document.getElementById('chartModelSoundCats'), {
+                type: 'bar',
+                data: {
+                    labels: modelNames,
+                    datasets: datasetsSound
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 100, title: {display: true, text: 'Accuracy (%)'} },
+                         x: { 
+                            ticks: { 
+                                font: { weight: 'bold', size: 16},
+                                autoSkip: false,
+                                maxRotation: 45,
+                                minRotation: 0
+                            } 
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 16 } } },
+                        // ADD THIS TOOLTIP BLOCK HERE:
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    // This forces 1 decimal place (e.g., 46.0)
+                                    if (context.parsed.y !== null) {
+                                        label += Number(context.parsed.y).toFixed(1) + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- NEW: MODAL FUNCTIONS ---
+        const modal = document.getElementById("transcriptionModal");
+        const closeModalSpan = document.getElementsByClassName("close-modal")[0];
+        const modalText = document.getElementById("fullTranscriptionText");
+
+        function openModal(text) {
+            modalText.innerText = text;
+            modal.classList.add('show');
+        }
+
+        // Close when clicking (x)
+        closeModalSpan.onclick = function() {
+            modal.classList.remove('show');
+        }
+
+        // Close when clicking outside the box
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initWheel();
+            initCharts();
+        });
+
+    </script>
 </body>
 </html>
